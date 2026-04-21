@@ -71,16 +71,6 @@
 
     #scoreboard span { color: #fff; font-weight: bold; }
 
-    #combo-display {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #facc15;
-      letter-spacing: 3px;
-      min-height: 28px;
-      text-shadow: 0 0 10px #facc1566;
-      text-transform: uppercase;
-    }
-
     #canvas-wrapper { position: relative; }
 
     canvas {
@@ -128,32 +118,36 @@
 
     #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 
-    #wrap-toggle {
-      padding: 4px 16px;
-      border: 1px solid #333;
+    /* ── Mode bar ── */
+    #mode-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      padding: 5px 14px;
+      border: 1px solid #2a2a2a;
       border-radius: 20px;
       background: transparent;
       color: #555;
       font-size: 0.7rem;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       cursor: pointer;
       transition: all 0.2s;
+      user-select: none;
     }
 
-    #wrap-toggle:hover { color: #999; border-color: #555; }
-
-    #wrap-toggle.active {
-      border-color: #60a5fa;
-      color: #60a5fa;
-      text-shadow: 0 0 8px #60a5fa55;
+    .mode-btn.on {
+      border-color: #4ade80;
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.08);
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
     }
 
     /* ── Changelog tab ── */
-    #changelog-panel {
-      width: 404px;
-    }
+    #changelog-panel { width: 404px; }
 
     .cl-header {
       font-size: 0.7rem;
@@ -197,10 +191,7 @@
       letter-spacing: 1px;
     }
 
-    .cl-date {
-      font-size: 0.7rem;
-      color: #444;
-    }
+    .cl-date { font-size: 0.7rem; color: #444; }
 
     .cl-items {
       list-style: none;
@@ -216,23 +207,12 @@
       position: relative;
     }
 
-    .cl-items li::before {
-      content: '\2192';
-      position: absolute;
-      left: 0;
-      color: #333;
-    }
-
+    .cl-items li::before { content: '\2192'; position: absolute; left: 0; color: #333; }
     .cl-items li.new::before { color: #4ade80; }
     .cl-items li.fix::before { content: '\2726'; color: #facc15; }
     .cl-items li.change::before { content: '\25C6'; color: #60a5fa; }
 
-    .cl-by {
-      margin-top: 8px;
-      font-size: 0.65rem;
-      color: #333;
-      letter-spacing: 1px;
-    }
+    .cl-by { margin-top: 8px; font-size: 0.65rem; color: #333; letter-spacing: 1px; }
   </style>
 </head>
 <body>
@@ -251,8 +231,6 @@
       Best: <span id="best">0</span>
     </div>
 
-    <div id="combo-display"></div>
-
     <div id="canvas-wrapper">
       <canvas id="c" width="400" height="400"></canvas>
       <div id="overlay">
@@ -262,13 +240,16 @@
       </div>
     </div>
 
-    <div id="controls">Arrow Keys / WASD &nbsp;·&nbsp; Eat 5 foods for bonus &#9733; &nbsp;·&nbsp; Combo for multiplier</div>
-    <button id="wrap-toggle">Wrap: OFF</button>
+    <div id="mode-bar">
+      <button class="mode-btn" id="wrap-btn">&#x27F3; Wrap</button>
+    </div>
+
+    <div id="controls">Arrow Keys / WASD &nbsp;&middot;&nbsp; Gold item = +50 pts &nbsp;&middot;&nbsp; Fast eating = combo</div>
   </div>
 
   <!-- Changelog tab -->
   <div id="changelog-panel" class="tab-panel">
-    <p class="cl-header">Update history — maintained by Claude</p>
+    <p class="cl-header">Update history &mdash; maintained by Claude</p>
     <div class="cl-list" id="cl-list"></div>
   </div>
 
@@ -277,11 +258,11 @@
     const CHANGELOG = [
       {
         version: "v1.3",
-        date: "2026-04-21 15:00",
+        date: "2026-04-21 15:30",
         items: [
-          { type: "new", text: "Bonus Food: ngôi sao vàng xuất hiện sau mỗi 5 mồi, biến mất sau 5 giây, +30 điểm" },
-          { type: "new", text: "Combo Multiplier: ăn nhanh liên tiếp để nhân đôi/ba điểm (×2, ×3...)" },
-          { type: "new", text: "Wall Wrap Mode: toggle chế độ rắn đi xuyên tường, xuất hiện bên kia" },
+          { type: "new", text: "Wrap mode: bật để rắn xuyên tường, xuất hiện phía bên kia" },
+          { type: "new", text: "Power-up vàng xuất hiện ngẫu nhiên sau khi ăn mồi, ăn được +50 điểm" },
+          { type: "new", text: "Combo streak: ăn mồi liên tiếp trong 3.5s được nhân điểm 2x → 3x" },
         ],
         by: "Claude (claude-sonnet-4-6)",
       },
@@ -353,12 +334,15 @@
     const overlayTitle = document.getElementById('overlay-title');
     const overlaySub = document.getElementById('overlay-sub');
     const btn = document.getElementById('btn');
-    const comboDisplay = document.getElementById('combo-display');
-    const wrapToggleBtn = document.getElementById('wrap-toggle');
+    const wrapBtn = document.getElementById('wrap-btn');
 
     const CELL = 20;
     const COLS = canvas.width / CELL;
     const ROWS = canvas.height / CELL;
+    const COMBO_WINDOW = 3500;
+    const MAX_COMBO = 3;
+    const POWERUP_DURATION = 6000;
+    const POWERUP_CHANCE = 0.30;
 
     const DIRS = {
       ArrowUp:    [0, -1], w: [0, -1],
@@ -368,65 +352,61 @@
     };
 
     let snake, dir, nextDir, food, score, best, loopId, speed, particles;
-    let bonusFood, bonusTimer, foodEaten;
-    let combo, comboTimeout;
+    let powerup, powerupTimeout;
+    let combo, lastFoodTime;
     let wrapMode = false;
-
-    const COMBO_WINDOW = 3000;
+    let puPulse = 0;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
 
-    // ── Wrap toggle ─────────────────────────────────────────────────
-    wrapToggleBtn.addEventListener('click', () => {
+    // ── Wrap mode toggle ─────────────────────────────────────────────
+    wrapBtn.addEventListener('click', () => {
       wrapMode = !wrapMode;
-      wrapToggleBtn.textContent = `Wrap: ${wrapMode ? 'ON' : 'OFF'}`;
-      wrapToggleBtn.classList.toggle('active', wrapMode);
+      wrapBtn.classList.toggle('on', wrapMode);
     });
 
-    function randFood(snake) {
+    // ── Helpers ──────────────────────────────────────────────────────
+    function randFood(sn) {
       let pos;
       do {
         pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (snake.some(s => s[0] === pos[0] && s[1] === pos[1]));
+      } while (
+        sn.some(s => s[0] === pos[0] && s[1] === pos[1]) ||
+        (powerup && pos[0] === powerup[0] && pos[1] === powerup[1])
+      );
       return pos;
     }
 
-    // ── Bonus food ───────────────────────────────────────────────────
-    function spawnBonusFood() {
-      const occupied = [...snake, food];
+    function maybeSpawnPowerup() {
+      if (powerup || Math.random() > POWERUP_CHANCE) return;
       let pos;
       do {
         pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (occupied.some(s => s[0] === pos[0] && s[1] === pos[1]));
-      bonusFood = pos;
-      if (bonusTimer) clearTimeout(bonusTimer);
-      bonusTimer = setTimeout(() => { bonusFood = null; bonusTimer = null; }, 5000);
+      } while (
+        snake.some(s => s[0] === pos[0] && s[1] === pos[1]) ||
+        (pos[0] === food[0] && pos[1] === food[1])
+      );
+      powerup = pos;
+      powerupTimeout = setTimeout(() => { powerup = null; }, POWERUP_DURATION);
     }
 
-    // ── Combo ────────────────────────────────────────────────────────
-    function resetCombo() {
-      combo = 0;
-      comboDisplay.textContent = '';
-      comboTimeout = null;
-    }
-
-    // ── Particle system ─────────────────────────────────────────────
-    function spawnParticles(gx, gy, gold) {
+    // ── Particle system ───────────────────────────────────────────────
+    function spawnParticles(gx, gy, golden) {
       const cx = gx * CELL + CELL / 2;
       const cy = gy * CELL + CELL / 2;
-      const count = gold ? 20 : 14;
+      const count = golden ? 22 : 14;
       for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-        const spd = (gold ? 2.5 : 1.8) + Math.random() * 2.8;
-        const hue = gold ? (40 + Math.random() * 20) : (Math.random() * 60 + 10);
+        const spd = (golden ? 2.8 : 1.8) + Math.random() * 2.8;
+        const hue = golden ? 35 + Math.random() * 25 : Math.random() * 60 + 10;
         particles.push({
-          x: cx,
-          y: cy,
+          x: cx, y: cy,
           vx: Math.cos(angle) * spd,
           vy: Math.sin(angle) * spd,
           life: 1,
           hue,
+          r: golden ? 4.5 : 3.5,
         });
       }
     }
@@ -447,26 +427,25 @@
         ctx.globalAlpha = p.life * p.life;
         ctx.fillStyle = `hsl(${p.hue}, 90%, 62%)`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.globalAlpha = 1;
     }
 
+    // ── Game lifecycle ────────────────────────────────────────────────
     function startGame() {
-      snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
+      snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
       dir = [1, 0];
       nextDir = [1, 0];
+      powerup = null;
+      clearTimeout(powerupTimeout);
       food = randFood(snake);
       score = 0;
       speed = 120;
       particles = [];
-      combo = 0;
-      foodEaten = 0;
-      bonusFood = null;
-      if (bonusTimer) { clearTimeout(bonusTimer); bonusTimer = null; }
-      if (comboTimeout) { clearTimeout(comboTimeout); comboTimeout = null; }
-      comboDisplay.textContent = '';
+      combo = 1;
+      lastFoodTime = 0;
       scoreEl.textContent = 0;
       overlay.style.display = 'none';
       if (loopId) clearTimeout(loopId);
@@ -484,8 +463,8 @@
       let head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
 
       if (wrapMode) {
-        head[0] = ((head[0] % COLS) + COLS) % COLS;
-        head[1] = ((head[1] % ROWS) + ROWS) % ROWS;
+        head[0] = (head[0] + COLS) % COLS;
+        head[1] = (head[1] + ROWS) % ROWS;
       } else {
         if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
       }
@@ -494,20 +473,15 @@
 
       snake.unshift(head);
 
-      let ateFood = false;
-
       if (head[0] === food[0] && head[1] === food[1]) {
-        ateFood = true;
-
-        combo++;
-        if (comboTimeout) clearTimeout(comboTimeout);
-        comboTimeout = setTimeout(resetCombo, COMBO_WINDOW);
-        const multiplier = Math.max(1, combo);
-        if (combo >= 2) {
-          comboDisplay.textContent = `COMBO ×${combo}`;
+        const now = Date.now();
+        if (lastFoodTime > 0 && now - lastFoodTime < COMBO_WINDOW) {
+          combo = Math.min(combo + 1, MAX_COMBO);
+        } else {
+          combo = 1;
         }
-
-        score += 10 * multiplier;
+        lastFoodTime = now;
+        score += 10 * combo;
         scoreEl.textContent = score;
         if (score > best) {
           best = score;
@@ -515,30 +489,24 @@
           localStorage.setItem('snake_best', best);
         }
         spawnParticles(food[0], food[1], false);
-
-        foodEaten++;
-        if (foodEaten % 5 === 0) spawnBonusFood();
-
         food = randFood(snake);
         speed = Math.max(60, speed - 2);
-      }
-
-      if (bonusFood && head[0] === bonusFood[0] && head[1] === bonusFood[1]) {
-        ateFood = true;
-        const multiplier = Math.max(1, combo);
-        score += 30 * multiplier;
+        maybeSpawnPowerup();
+      } else if (powerup && head[0] === powerup[0] && head[1] === powerup[1]) {
+        snake.pop();
+        clearTimeout(powerupTimeout);
+        powerup = null;
+        score += 50;
         scoreEl.textContent = score;
         if (score > best) {
           best = score;
           bestEl.textContent = best;
           localStorage.setItem('snake_best', best);
         }
-        spawnParticles(bonusFood[0], bonusFood[1], true);
-        bonusFood = null;
-        if (bonusTimer) { clearTimeout(bonusTimer); bonusTimer = null; }
+        spawnParticles(head[0], head[1], true);
+      } else {
+        snake.pop();
       }
-
-      if (!ateFood) snake.pop();
 
       updateParticles();
     }
@@ -547,71 +515,82 @@
       ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Grid
       ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
-        ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
       }
       for (let y = 0; y <= ROWS; y++) {
-        ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
       }
 
+      // Wrap mode border glow
       if (wrapMode) {
-        ctx.save();
-        ctx.strokeStyle = '#60a5fa44';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-        ctx.restore();
+        ctx.strokeStyle = 'rgba(74, 222, 128, 0.2)';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
       }
 
       drawParticles();
 
+      // Food
       const [fx, fy] = food;
       ctx.fillStyle = '#f87171';
       ctx.beginPath();
-      ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
+      ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
 
-      if (bonusFood) {
-        const [bx, by] = bonusFood;
-        const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
-        const cx = bx * CELL + CELL / 2;
-        const cy = by * CELL + CELL / 2;
-        ctx.save();
-        ctx.globalAlpha = (0.2 + 0.15 * pulse);
-        ctx.fillStyle = '#facc15';
+      // Power-up (pulsing gold)
+      if (powerup) {
+        puPulse += 0.15;
+        const pr = CELL / 2 - 1 + Math.sin(puPulse) * 2;
+        const [px, py] = powerup;
+        const cx = px * CELL + CELL / 2;
+        const cy = py * CELL + CELL / 2;
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 14;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, pr);
+        grad.addColorStop(0, '#fffbeb');
+        grad.addColorStop(1, '#f59e0b');
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(cx, cy, CELL / 2 + 5, 0, Math.PI * 2);
+        ctx.arc(cx, cy, pr, 0, Math.PI * 2);
         ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.arc(cx, cy, CELL / 2 - 1, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#111';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('★', cx, cy);
-        ctx.restore();
+        ctx.shadowBlur = 0;
       }
 
+      // Snake
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
           ? '#4ade80'
-          : `hsl(${140 - ratio*40}, 70%, ${50 - ratio*15}%)`;
+          : `hsl(${140 - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
         ctx.beginPath();
-        ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
+        ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
         ctx.fill();
       });
+
+      // Combo HUD
+      if (combo > 1 && lastFoodTime > 0) {
+        const age = Date.now() - lastFoodTime;
+        if (age < COMBO_WINDOW) {
+          const alpha = Math.max(0, 1 - age / COMBO_WINDOW);
+          ctx.globalAlpha = alpha;
+          ctx.font = 'bold 13px "Segoe UI", sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillStyle = combo === MAX_COMBO ? '#f59e0b' : '#facc15';
+          ctx.fillText(`${combo}× COMBO`, canvas.width - 8, 20);
+          ctx.globalAlpha = 1;
+        }
+      }
+      ctx.textAlign = 'left';
     }
 
     function endGame() {
       clearTimeout(loopId);
-      if (bonusTimer) { clearTimeout(bonusTimer); bonusTimer = null; }
-      if (comboTimeout) { clearTimeout(comboTimeout); comboTimeout = null; }
-      comboDisplay.textContent = '';
+      clearTimeout(powerupTimeout);
+      powerup = null;
       overlayTitle.textContent = 'GAME OVER';
       overlaySub.textContent = `Score: ${score}`;
       btn.textContent = 'PLAY AGAIN';
