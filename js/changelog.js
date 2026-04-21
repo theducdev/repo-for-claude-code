@@ -1,6 +1,16 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.8",
+    date: "2026-04-21 19:30",
+    items: [
+      { type: "new", text: "Shield power-up: hình thoi xanh cyan, xuất hiện mỗi 8 mồi — ăn vào chặn 1 lần va chạm bản thân, glow 5 giây" },
+      { type: "new", text: "Poison food: quả tím nhỏ xuất hiện ngẫu nhiên — ăn +5 điểm nhưng rắn bị co ngắn 2 đốt" },
+      { type: "new", text: "Score milestones: đạt 50/100/200/300/500 điểm → rainbow particle burst + flash chúc mừng trên canvas" },
+    ],
+    by: "Claude (claude-sonnet-4-6)",
+  },
+  {
     version: "v1.7",
     date: "2026-04-21 18:30",
     items: [
