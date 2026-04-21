@@ -89,7 +89,7 @@
       justify-content: center;
       background: rgba(0,0,0,0.75);
       border-radius: 4px;
-      gap: 12px;
+      gap: 10px;
     }
 
     #overlay h2 {
@@ -101,7 +101,7 @@
     #overlay p { color: #aaa; font-size: 0.85rem; letter-spacing: 1px; }
 
     #overlay button {
-      margin-top: 8px;
+      margin-top: 6px;
       padding: 10px 32px;
       background: #4ade80;
       color: #000;
@@ -116,12 +116,21 @@
 
     #overlay button:hover { background: #22c55e; }
 
+    #overlay-rank {
+      font-size: 0.8rem;
+      color: #facc15;
+      letter-spacing: 1px;
+      min-height: 1.2em;
+    }
+
     #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 
     /* ── Mode bar ── */
     #mode-bar {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .mode-btn {
@@ -144,6 +153,64 @@
       color: #4ade80;
       background: rgba(74, 222, 128, 0.08);
       box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
+    }
+
+    .theme-btn { border-radius: 20px; }
+    .theme-btn.active { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); }
+
+    /* ── Scores tab ── */
+    #scores-panel { width: 404px; }
+
+    .score-header {
+      font-size: 0.7rem;
+      color: #444;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .score-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+
+    .score-rank {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #333;
+      width: 24px;
+      text-align: center;
+    }
+
+    .score-row:nth-child(1) .score-rank { color: #fbbf24; }
+    .score-row:nth-child(2) .score-rank { color: #9ca3af; }
+    .score-row:nth-child(3) .score-rank { color: #cd7c2f; }
+
+    .score-val {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #fff;
+      flex: 1;
+    }
+
+    .score-empty {
+      font-size: 0.8rem;
+      color: #333;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 24px 0;
     }
 
     /* ── Changelog tab ── */
@@ -220,6 +287,7 @@
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
+    <button class="tab-btn" data-tab="scores">Scores</button>
     <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
@@ -236,15 +304,25 @@
       <div id="overlay">
         <h2 id="overlay-title">SNAKE</h2>
         <p id="overlay-sub">Use Arrow Keys or WASD</p>
+        <div id="overlay-rank"></div>
         <button id="btn">PLAY</button>
       </div>
     </div>
 
     <div id="mode-bar">
       <button class="mode-btn" id="wrap-btn">&#x27F3; Wrap</button>
+      <button class="mode-btn theme-btn active" data-theme="classic">Classic</button>
+      <button class="mode-btn theme-btn" data-theme="neon">Neon</button>
+      <button class="mode-btn theme-btn" data-theme="ocean">Ocean</button>
     </div>
 
-    <div id="controls">Arrow Keys / WASD &nbsp;&middot;&nbsp; Gold item = +50 pts &nbsp;&middot;&nbsp; Fast eating = combo</div>
+    <div id="controls">Arrow Keys / WASD &nbsp;·&nbsp; Space / P = pause &nbsp;·&nbsp; Gold = +50 pts</div>
+  </div>
+
+  <!-- Scores tab -->
+  <div id="scores-panel" class="tab-panel">
+    <p class="score-header">Top scores — stored locally</p>
+    <div class="score-list" id="score-list"></div>
   </div>
 
   <!-- Changelog tab -->
@@ -256,6 +334,16 @@
   <script>
     // ── Changelog data ──────────────────────────────────────────────
     const CHANGELOG = [
+      {
+        version: "v1.4",
+        date: "2026-04-21 18:00",
+        items: [
+          { type: "new", text: "Pause: nhấn Space hoặc P để tạm dừng/tiếp tục" },
+          { type: "new", text: "High Score Board: lưu top 5 điểm cao nhất, có tab riêng" },
+          { type: "new", text: "Color Themes: Classic / Neon / Ocean — đổi màu toàn bộ game" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
       {
         version: "v1.3",
         date: "2026-04-21 15:30",
@@ -322,6 +410,77 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab + '-panel').classList.add('active');
+        if (btn.dataset.tab === 'scores') renderScores();
+      });
+    });
+
+    // ── High Score Board ─────────────────────────────────────────────
+    const MAX_BOARD = 5;
+    const MEDALS = ['🥇', '🥈', '🥉', '4', '5'];
+
+    function loadScores() {
+      try { return JSON.parse(localStorage.getItem('snake_scores') || '[]'); }
+      catch { return []; }
+    }
+
+    function saveScoreBoard(s) {
+      if (s <= 0) return null;
+      const scores = loadScores();
+      scores.push(s);
+      scores.sort((a, b) => b - a);
+      const trimmed = scores.slice(0, MAX_BOARD);
+      localStorage.setItem('snake_scores', JSON.stringify(trimmed));
+      return trimmed.indexOf(s) + 1;
+    }
+
+    function renderScores() {
+      const list = document.getElementById('score-list');
+      const scores = loadScores();
+      if (scores.length === 0) {
+        list.innerHTML = '<div class="score-empty">No scores yet — play a game!</div>';
+        return;
+      }
+      list.innerHTML = scores.map((s, i) => `
+        <div class="score-row">
+          <span class="score-rank">${MEDALS[i]}</span>
+          <span class="score-val">${s}</span>
+        </div>
+      `).join('');
+    }
+
+    // ── Color themes ─────────────────────────────────────────────────
+    const THEMES = {
+      classic: {
+        bg: '#111', grid: '#1a1a1a', border: 'rgba(74,222,128,0.2)',
+        foodColor: '#f87171',
+        snakeHead: '#4ade80', snakeHue: 140,
+        wrapGlow: 'rgba(74,222,128,0.2)',
+        comboColor: '#facc15', comboMaxColor: '#f59e0b',
+      },
+      neon: {
+        bg: '#080c14', grid: '#0d1525', border: 'rgba(34,211,238,0.25)',
+        foodColor: '#f472b6',
+        snakeHead: '#22d3ee', snakeHue: 195,
+        wrapGlow: 'rgba(34,211,238,0.25)',
+        comboColor: '#a78bfa', comboMaxColor: '#7c3aed',
+      },
+      ocean: {
+        bg: '#08111c', grid: '#0e1c2a', border: 'rgba(96,165,250,0.25)',
+        foodColor: '#34d399',
+        snakeHead: '#60a5fa', snakeHue: 220,
+        wrapGlow: 'rgba(96,165,250,0.25)',
+        comboColor: '#6ee7b7', comboMaxColor: '#059669',
+      },
+    };
+
+    let currentTheme = 'classic';
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTheme = btn.dataset.theme;
+        document.querySelector('canvas').style.background = THEMES[currentTheme].bg;
       });
     });
 
@@ -333,6 +492,7 @@
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlay-title');
     const overlaySub = document.getElementById('overlay-sub');
+    const overlayRank = document.getElementById('overlay-rank');
     const btn = document.getElementById('btn');
     const wrapBtn = document.getElementById('wrap-btn');
 
@@ -355,6 +515,7 @@
     let powerup, powerupTimeout;
     let combo, lastFoodTime;
     let wrapMode = false;
+    let paused = false;
     let puPulse = 0;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
@@ -433,6 +594,27 @@
       ctx.globalAlpha = 1;
     }
 
+    // ── Pause ────────────────────────────────────────────────────────
+    function togglePause() {
+      paused = !paused;
+      if (paused) {
+        clearTimeout(loopId);
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 28px "Segoe UI", sans-serif';
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 14);
+        ctx.fillStyle = '#555';
+        ctx.font = '13px "Segoe UI", sans-serif';
+        ctx.fillText('Press Space or P to resume', canvas.width / 2, canvas.height / 2 + 14);
+        ctx.textBaseline = 'alphabetic';
+      } else {
+        loop();
+      }
+    }
+
     // ── Game lifecycle ────────────────────────────────────────────────
     function startGame() {
       snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
@@ -446,8 +628,10 @@
       particles = [];
       combo = 1;
       lastFoodTime = 0;
+      paused = false;
       scoreEl.textContent = 0;
       overlay.style.display = 'none';
+      overlayRank.textContent = '';
       if (loopId) clearTimeout(loopId);
       loop();
     }
@@ -512,11 +696,12 @@
     }
 
     function draw() {
-      ctx.fillStyle = '#111';
+      const t = THEMES[currentTheme];
+      ctx.fillStyle = t.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Grid
-      ctx.strokeStyle = '#1a1a1a';
+      ctx.strokeStyle = t.grid;
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
         ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
@@ -527,7 +712,7 @@
 
       // Wrap mode border glow
       if (wrapMode) {
-        ctx.strokeStyle = 'rgba(74, 222, 128, 0.2)';
+        ctx.strokeStyle = t.wrapGlow;
         ctx.lineWidth = 3;
         ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
       }
@@ -536,7 +721,7 @@
 
       // Food
       const [fx, fy] = food;
-      ctx.fillStyle = '#f87171';
+      ctx.fillStyle = t.foodColor;
       ctx.beginPath();
       ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
@@ -564,8 +749,8 @@
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
-          ? '#4ade80'
-          : `hsl(${140 - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
+          ? t.snakeHead
+          : `hsl(${t.snakeHue - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
         ctx.beginPath();
         ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
         ctx.fill();
@@ -579,7 +764,7 @@
           ctx.globalAlpha = alpha;
           ctx.font = 'bold 13px "Segoe UI", sans-serif';
           ctx.textAlign = 'right';
-          ctx.fillStyle = combo === MAX_COMBO ? '#f59e0b' : '#facc15';
+          ctx.fillStyle = combo === MAX_COMBO ? t.comboMaxColor : t.comboColor;
           ctx.fillText(`${combo}× COMBO`, canvas.width - 8, 20);
           ctx.globalAlpha = 1;
         }
@@ -591,8 +776,11 @@
       clearTimeout(loopId);
       clearTimeout(powerupTimeout);
       powerup = null;
+      paused = false;
+      const rank = saveScoreBoard(score);
       overlayTitle.textContent = 'GAME OVER';
       overlaySub.textContent = `Score: ${score}`;
+      overlayRank.textContent = rank ? `You ranked #${rank} on the board!` : '';
       btn.textContent = 'PLAY AGAIN';
       overlay.style.display = 'flex';
     }
@@ -600,9 +788,17 @@
     btn.addEventListener('click', startGame);
 
     document.addEventListener('keydown', e => {
+      if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+        if (overlay.style.display === 'none') {
+          e.preventDefault();
+          togglePause();
+        }
+        return;
+      }
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
+      if (paused) return;
       if (d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
