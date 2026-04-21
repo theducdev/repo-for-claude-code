@@ -242,6 +242,15 @@
     // Claude updates this array each time a new feature is shipped.
     const CHANGELOG = [
       {
+        version: "v1.2",
+        date: "2026-04-21 15:00",
+        items: [
+          { type: "new", text: "Hiệu ứng particle bùng nổ khi rắn ăn mồi" },
+          { type: "new", text: "Particles có màu sắc ngẫu nhiên, trọng lực và fade-out mượt" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+      {
         version: "v1.1",
         date: "2026-04-21 08:30",
         items: [
@@ -312,7 +321,7 @@
       ArrowRight: [1,  0], d: [1,   0],
     };
 
-    let snake, dir, nextDir, food, score, best, loopId, speed;
+    let snake, dir, nextDir, food, score, best, loopId, speed, particles;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
@@ -325,6 +334,48 @@
       return pos;
     }
 
+    // ── Particle system ─────────────────────────────────────────────
+    function spawnParticles(gx, gy) {
+      const cx = gx * CELL + CELL / 2;
+      const cy = gy * CELL + CELL / 2;
+      const count = 14;
+      for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+        const spd = 1.8 + Math.random() * 2.8;
+        const hue = Math.random() * 60 + 10;
+        particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: 1,
+          hue,
+        });
+      }
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12;
+        p.vx *= 0.96;
+        p.life -= 0.035;
+        return p.life > 0;
+      });
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.globalAlpha = p.life * p.life;
+        ctx.fillStyle = `hsl(${p.hue}, 90%, 62%)`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
     function startGame() {
       snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
       dir = [1, 0];
@@ -332,6 +383,7 @@
       food = randFood(snake);
       score = 0;
       speed = 120;
+      particles = [];
       scoreEl.textContent = 0;
       overlay.style.display = 'none';
       if (loopId) clearTimeout(loopId);
@@ -361,11 +413,14 @@
           bestEl.textContent = best;
           localStorage.setItem('snake_best', best);
         }
+        spawnParticles(food[0], food[1]);
         food = randFood(snake);
         speed = Math.max(60, speed - 2);
       } else {
         snake.pop();
       }
+
+      updateParticles();
     }
 
     function draw() {
@@ -380,6 +435,8 @@
       for (let y = 0; y <= ROWS; y++) {
         ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
       }
+
+      drawParticles();
 
       const [fx, fy] = food;
       ctx.fillStyle = '#f87171';
