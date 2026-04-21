@@ -26,6 +26,40 @@
       text-transform: uppercase;
     }
 
+    /* ── Tabs ── */
+    #tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      padding: 6px 20px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #666;
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    .tab-btn:hover:not(.active) { color: #aaa; }
+
+    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 16px; }
+    .tab-panel.active { display: flex; }
+
+    /* ── Game tab ── */
     #scoreboard {
       display: flex;
       gap: 40px;
@@ -37,9 +71,7 @@
 
     #scoreboard span { color: #fff; font-weight: bold; }
 
-    #canvas-wrapper {
-      position: relative;
-    }
+    #canvas-wrapper { position: relative; }
 
     canvas {
       display: block;
@@ -84,9 +116,89 @@
 
     #overlay button:hover { background: #22c55e; }
 
-    #controls {
-      color: #555;
+    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
+
+    /* ── Changelog tab ── */
+    #changelog-panel {
+      width: 404px;
+    }
+
+    .cl-header {
+      font-size: 0.7rem;
+      color: #444;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .cl-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .cl-list::-webkit-scrollbar { width: 4px; }
+    .cl-list::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 2px; }
+    .cl-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .cl-entry {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .cl-entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .cl-version {
       font-size: 0.75rem;
+      font-weight: bold;
+      color: #4ade80;
+      letter-spacing: 1px;
+    }
+
+    .cl-date {
+      font-size: 0.7rem;
+      color: #444;
+    }
+
+    .cl-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cl-items li {
+      font-size: 0.8rem;
+      color: #aaa;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .cl-items li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #333;
+    }
+
+    .cl-items li.new::before { color: #4ade80; }
+    .cl-items li.fix::before { content: '✦'; color: #facc15; }
+    .cl-items li.change::before { content: '◆'; color: #60a5fa; }
+
+    .cl-by {
+      margin-top: 8px;
+      font-size: 0.65rem;
+      color: #333;
       letter-spacing: 1px;
     }
   </style>
@@ -94,24 +206,92 @@
 <body>
   <h1>Snake</h1>
 
-  <div id="scoreboard">
-    Score: <span id="score">0</span>
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    Best: <span id="best">0</span>
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="game">Game</button>
+    <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
-  <div id="canvas-wrapper">
-    <canvas id="c" width="400" height="400"></canvas>
-    <div id="overlay">
-      <h2 id="overlay-title">SNAKE</h2>
-      <p id="overlay-sub">Use Arrow Keys or WASD</p>
-      <button id="btn">PLAY</button>
+  <!-- Game tab -->
+  <div id="game-panel" class="tab-panel active">
+    <div id="scoreboard">
+      Score: <span id="score">0</span>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      Best: <span id="best">0</span>
     </div>
+
+    <div id="canvas-wrapper">
+      <canvas id="c" width="400" height="400"></canvas>
+      <div id="overlay">
+        <h2 id="overlay-title">SNAKE</h2>
+        <p id="overlay-sub">Use Arrow Keys or WASD</p>
+        <button id="btn">PLAY</button>
+      </div>
+    </div>
+
+    <div id="controls">Arrow Keys / WASD to move</div>
   </div>
 
-  <div id="controls">Arrow Keys / WASD to move</div>
+  <!-- Changelog tab -->
+  <div id="changelog-panel" class="tab-panel">
+    <p class="cl-header">Update history — maintained by Claude</p>
+    <div class="cl-list" id="cl-list"></div>
+  </div>
 
   <script>
+    // ── Changelog data ──────────────────────────────────────────────
+    // Claude updates this array each time a new feature is shipped.
+    const CHANGELOG = [
+      {
+        version: "v1.1",
+        date: "2026-04-21 08:30",
+        items: [
+          { type: "new", text: "Thêm tab Changelog để theo dõi lịch sử cập nhật" },
+          { type: "new", text: "Tab Game / Changelog có thể chuyển đổi" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+      {
+        version: "v1.0",
+        date: "2026-04-21 08:00",
+        items: [
+          { type: "new", text: "Khởi tạo game Snake trên web (HTML/JS/Canvas)" },
+          { type: "new", text: "Lưu best score bằng localStorage" },
+          { type: "new", text: "Điều khiển bằng Arrow Keys hoặc WASD" },
+          { type: "new", text: "Tốc độ tăng dần theo điểm" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+    ];
+
+    // ── Render changelog ────────────────────────────────────────────
+    const clList = document.getElementById('cl-list');
+    CHANGELOG.forEach(entry => {
+      const el = document.createElement('div');
+      el.className = 'cl-entry';
+      el.innerHTML = `
+        <div class="cl-entry-header">
+          <span class="cl-version">${entry.version}</span>
+          <span class="cl-date">${entry.date}</span>
+        </div>
+        <ul class="cl-items">
+          ${entry.items.map(i => `<li class="${i.type}">${i.text}</li>`).join('')}
+        </ul>
+        <div class="cl-by">by ${entry.by}</div>
+      `;
+      clList.appendChild(el);
+    });
+
+    // ── Tab switching ───────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab + '-panel').classList.add('active');
+      });
+    });
+
+    // ── Game ────────────────────────────────────────────────────────
     const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
@@ -168,14 +348,8 @@
       dir = nextDir;
       const head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
 
-      // Wall collision
-      if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) {
-        return endGame();
-      }
-      // Self collision
-      if (snake.some(s => s[0] === head[0] && s[1] === head[1])) {
-        return endGame();
-      }
+      if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+      if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
 
       snake.unshift(head);
 
@@ -198,7 +372,6 @@
       ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Grid (subtle)
       ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
@@ -208,14 +381,12 @@
         ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
       }
 
-      // Food
       const [fx, fy] = food;
       ctx.fillStyle = '#f87171';
       ctx.beginPath();
       ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
       ctx.fill();
 
-      // Snake
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
@@ -241,7 +412,6 @@
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
-      // Prevent reversing
       if (d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
