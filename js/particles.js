@@ -1,34 +1,33 @@
-const CELL = 20;
-
+// Particle burst system — spawned when the snake eats food.
 let particles = [];
 
 export function resetParticles() {
   particles = [];
 }
 
-export function spawnParticles(gx, gy, hueCenter = 30) {
-  const cx = gx * CELL + CELL / 2;
-  const cy = gy * CELL + CELL / 2;
+export function spawnParticles(gx, gy, cellSize, hueOverride = null) {
+  const cx = gx * cellSize + cellSize / 2;
+  const cy = gy * cellSize + cellSize / 2;
   const count = 14;
   for (let i = 0; i < count; i++) {
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
     const spd = 1.8 + Math.random() * 2.8;
+    const hue = hueOverride !== null
+      ? hueOverride + (Math.random() - 0.5) * 30
+      : Math.random() * 60 + 10;
     particles.push({
       x: cx, y: cy,
       vx: Math.cos(angle) * spd,
       vy: Math.sin(angle) * spd,
-      life: 1,
-      hue: hueCenter + (Math.random() - 0.5) * 40,
+      life: 1, hue,
     });
   }
 }
 
 export function updateParticles() {
   particles = particles.filter(p => {
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.12;
-    p.vx *= 0.96;
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.12; p.vx *= 0.96;
     p.life -= 0.035;
     return p.life > 0;
   });

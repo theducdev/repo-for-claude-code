@@ -1,50 +1,62 @@
-let audioCtx = null;
+// Sound effects using Web Audio API — no external files needed.
+let actx = null;
+let enabled = localStorage.getItem('snake_sound') !== 'off';
 
-function ac() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
+function getCtx() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  return actx;
 }
 
-function tone(freq, duration, type = 'square', vol = 0.12) {
-  try {
-    const ctx = ac();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    gain.gain.setValueAtTime(vol, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration);
-  } catch (_) { /* audio blocked, ignore */ }
+export function isSoundEnabled() { return enabled; }
+
+export function toggleSound() {
+  enabled = !enabled;
+  localStorage.setItem('snake_sound', enabled ? 'on' : 'off');
+  return enabled;
 }
 
 export function playEat() {
-  tone(330, 0.07, 'square', 0.1);
-  setTimeout(() => tone(440, 0.07, 'square', 0.08), 55);
-}
-
-export function playPowerup() {
-  tone(440, 0.09, 'sine', 0.14);
-  setTimeout(() => tone(660, 0.09, 'sine', 0.14), 80);
-  setTimeout(() => tone(880, 0.14, 'sine', 0.12), 160);
-}
-
-export function playDie() {
+  if (!enabled) return;
   try {
-    const ctx = ac();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(320, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.45);
-    gain.gain.setValueAtTime(0.14, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.45);
-  } catch (_) { /* audio blocked, ignore */ }
+    const ac = getCtx();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(660, ac.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1100, ac.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.12, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.09);
+    osc.start(ac.currentTime);
+    osc.stop(ac.currentTime + 0.09);
+  } catch (_) {}
+}
+
+export function playGameOver() {
+  if (!enabled) return;
+  try {
+    const ac = getCtx();
+    [400, 330, 260, 180].forEach((freq, i) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.type = 'sawtooth';
+      const t = ac.currentTime + i * 0.13;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.10, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    });
+  } catch (_) {}
+}
+
+export function initSound() {
+  const btn = document.getElementById('sound-btn');
+  if (!btn) return;
+  btn.textContent = enabled ? 'SFX ON' : 'SFX OFF';
+  btn.addEventListener('click', () => {
+    const on = toggleSound();
+    btn.textContent = on ? 'SFX ON' : 'SFX OFF';
+  });
 }

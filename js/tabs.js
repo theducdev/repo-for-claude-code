@@ -1,3 +1,4 @@
+// Tab switching — Game / Scores / Changelog.
 export function initTabs() {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
