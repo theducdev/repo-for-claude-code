@@ -401,7 +401,7 @@
       ArrowRight: [1,  0], d: [1,   0],
     };
 
-    let snake, dir, nextDir, food, score, best, loopId, speed, particles;
+    let snake, dir, nextDir, food, score, best, loopId, speed, particles, gameRunning;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
@@ -465,6 +465,7 @@
       speed = 120;
       particles = [];
       scoreEl.textContent = 0;
+      gameRunning = true;
       overlay.style.display = 'none';
       if (loopId) clearTimeout(loopId);
       loop();
@@ -536,6 +537,7 @@
     }
 
     function endGame() {
+      gameRunning = false;
       clearTimeout(loopId);
       overlayTitle.textContent = 'GAME OVER';
       overlaySub.textContent = `Score: ${score}`;
@@ -549,7 +551,7 @@
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
-      if (d[0] === -dir[0] && d[1] === -dir[1]) return;
+      if (!gameRunning || d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
 
@@ -564,6 +566,7 @@
 
     canvas.addEventListener('touchend', e => {
       e.preventDefault();
+      if (!gameRunning) return;
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < 15) return;
@@ -577,7 +580,7 @@
     // ── D-pad buttons ───────────────────────────────────────────────
     function applyDir(key) {
       const d = DIRS[key];
-      if (!d || (d[0] === -dir[0] && d[1] === -dir[1])) return;
+      if (!gameRunning || !d || (d[0] === -dir[0] && d[1] === -dir[1])) return;
       nextDir = d;
     }
 
