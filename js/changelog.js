@@ -1,6 +1,16 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.6",
+    date: "2026-04-21 19:00",
+    items: [
+      { type: "new", text: "Combo Multiplier: ăn liên tiếp trong 3 giây để đạt x2/x3 — hiển thị nhãn trên canvas" },
+      { type: "new", text: "Golden Apple: sau mỗi 5 mồi thường, mồi vàng nhấp nháy xuất hiện 5 giây (+30 điểm)" },
+      { type: "new", text: "Warp Walls: toggle WARP ON/OFF — rắn xuyên tường thay vì chết" },
+    ],
+    by: "Claude (claude-sonnet-4-6)",
+  },
+  {
     version: "v1.5",
     date: "2026-04-21 18:00",
     items: [
