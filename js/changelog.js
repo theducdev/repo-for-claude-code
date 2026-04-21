@@ -1,6 +1,16 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.7",
+    date: "2026-04-21 18:30",
+    items: [
+      { type: "new", text: "Screen shake khi rắn chết — canvas rung 380ms với decay tự nhiên, overlay chỉ hiện sau khi shake xong" },
+      { type: "new", text: "Snake eyes — rắn có mắt thể hiện hướng di chuyển, con ngươi nhìn về phía trước" },
+      { type: "new", text: "New Best badge — nhãn '★ NEW BEST' sáng vàng trên canvas khi phá kỷ lục, tự mờ dần sau 2.5 giây" },
+    ],
+    by: "Claude (claude-sonnet-4-6)",
+  },
+  {
     version: "v1.6",
     date: "2026-04-21 19:00",
     items: [
