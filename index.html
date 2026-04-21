@@ -14,9 +14,10 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: 100vh;
-      gap: 16px;
+      gap: 12px;
+      padding: 20px 16px 32px;
     }
 
     h1 {
@@ -32,7 +33,8 @@
       letter-spacing: 2px;
       text-transform: uppercase;
       text-align: center;
-      margin-top: -8px;
+      margin-top: -4px;
+      padding: 0 8px;
     }
 
     #tagline .dot {
@@ -81,7 +83,7 @@
 
     .tab-btn:hover:not(.active) { color: #aaa; }
 
-    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 16px; }
+    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 440px; }
     .tab-panel.active { display: flex; }
 
     /* ── Game tab ── */
@@ -96,10 +98,17 @@
 
     #scoreboard span { color: #fff; font-weight: bold; }
 
-    #canvas-wrapper { position: relative; }
+    /* Canvas scales to viewport width, capped at 400px, stays square */
+    #canvas-wrapper {
+      position: relative;
+      width: min(400px, calc(100vw - 32px));
+      aspect-ratio: 1 / 1;
+    }
 
     canvas {
       display: block;
+      width: 100%;
+      height: 100%;
       border: 2px solid #2a2a2a;
       border-radius: 4px;
       background: #111;
@@ -141,14 +150,18 @@
 
     #overlay button:hover { background: #22c55e; }
 
-    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
+    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; text-align: center; }
 
-    /* ── D-pad ── */
+    /* ── D-pad: hidden on desktop pointer devices ── */
     #dpad {
       display: grid;
-      grid-template-columns: repeat(3, 52px);
-      grid-template-rows: repeat(3, 52px);
+      grid-template-columns: repeat(3, 56px);
+      grid-template-rows: repeat(3, 56px);
       gap: 4px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      #dpad { display: none; }
     }
 
     #dpad button {
@@ -156,7 +169,7 @@
       border: 1px solid #333;
       border-radius: 10px;
       color: #aaa;
-      font-size: 1.3rem;
+      font-size: 1.4rem;
       cursor: pointer;
       transition: background 0.1s, color 0.1s, transform 0.08s;
       touch-action: manipulation;
@@ -178,7 +191,7 @@
 
     /* ── High Score Board ── */
     #highscore-board {
-      width: 404px;
+      width: 100%;
     }
 
     .hs-header {
@@ -276,7 +289,7 @@
 
     /* ── Changelog tab ── */
     #changelog-panel {
-      width: 404px;
+      width: 100%;
     }
 
     .cl-header {
@@ -291,7 +304,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 420px;
+      max-height: 60vh;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -357,6 +370,13 @@
       color: #333;
       letter-spacing: 1px;
     }
+
+    /* ── Small mobile (<= 380px) ── */
+    @media (max-width: 380px) {
+      h1 { font-size: 1.5rem; letter-spacing: 4px; }
+      #tagline { font-size: 0.65rem; }
+      #overlay h2 { font-size: 1.4rem; }
+    }
   </style>
 </head>
 <body>
@@ -419,6 +439,19 @@
     // ── Changelog data ──────────────────────────────────────────────
     // Claude updates this array each time a new feature is shipped.
     const CHANGELOG = [
+      {
+        version: "v1.5",
+        date: "2026-04-21 15:45",
+        items: [
+          { type: "new", text: "Canvas co giãn theo viewport, cẩp tối đa 400px, giữ tỷ lệ 1:1" },
+          { type: "change", text: "Xóa fixed width trên tất cả element, dùng fluid layout" },
+          { type: "new", text: "D-pad ẩn trên PC (hover + mouse), hiện trên mobile/touch" },
+          { type: "change", text: "Nút D-pad to hơn (56px) dễ chạm tay" },
+          { type: "new", text: "Body có padding an toàn, cuộn mượt trên mobile" },
+          { type: "change", text: "Font nhỏ hơn trên màn hình ≤ 380px" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
       {
         version: "v1.4",
         date: "2026-04-21 15:35",
@@ -500,7 +533,6 @@
     // ── High Score Board ────────────────────────────────────────────
     const HS_KEY = 'snake_highscores';
     const HS_MAX = 5;
-    let lastNewRankIndex = -1;
 
     function loadScores() {
       try { return JSON.parse(localStorage.getItem(HS_KEY)) || []; }
