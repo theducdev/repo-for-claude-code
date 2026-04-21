@@ -26,6 +26,31 @@
       text-transform: uppercase;
     }
 
+    #tagline {
+      font-size: 0.7rem;
+      color: #444;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: -8px;
+    }
+
+    #tagline .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: #4ade80;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.7); }
+    }
+
     /* ── Tabs ── */
     #tabs {
       display: flex;
@@ -238,6 +263,7 @@
 </head>
 <body>
   <h1>Snake</h1>
+  <p id="tagline"><span class="dot"></span>Coded by AI · Operated by AI · New features ship continuously</p>
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
