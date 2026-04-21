@@ -26,6 +26,10 @@ let comboCount = 0, comboExpiry = 0, comboFadeAt = 0;
 // Warp walls toggle
 let warpMode = false;
 
+// New best flash
+let newBestExpiry = 0;
+const NEW_BEST_DURATION = 2500;
+
 function getInitialSpeed() {
   const active = document.querySelector('.diff-btn.active');
   return active ? parseInt(active.dataset.speed, 10) : 120;
@@ -39,6 +43,24 @@ function randFood(sn) {
   return pos;
 }
 
+// ── Screen shake ─────────────────────────────────────────────────────
+function startShake(duration, intensity, callback) {
+  const start = performance.now();
+  (function step(now) {
+    const elapsed = now - start;
+    if (elapsed >= duration) {
+      canvas.style.transform = '';
+      if (callback) callback();
+      return;
+    }
+    const decay = 1 - elapsed / duration;
+    const x = (Math.random() - 0.5) * 2 * intensity * decay;
+    const y = (Math.random() - 0.5) * 2 * intensity * decay;
+    canvas.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+    requestAnimationFrame(step);
+  })(performance.now());
+}
+
 function startGame() {
   snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
   dir = [1, 0]; nextDir = [1, 0];
@@ -48,6 +70,7 @@ function startGame() {
   paused = false; running = true;
   bonusFood = null; bonusFoodExpiry = 0; foodEaten = 0;
   comboCount = 0; comboExpiry = 0; comboFadeAt = 0;
+  newBestExpiry = 0;
   scoreEl.textContent = 0;
   overlay.style.display = 'none';
   clearTimeout(loopId);
@@ -113,6 +136,7 @@ function update() {
       best = score;
       bestEl.textContent = best;
       localStorage.setItem('snake_best', best);
+      newBestExpiry = Date.now() + NEW_BEST_DURATION;
     }
   } else {
     snake.pop();
@@ -172,8 +196,26 @@ function draw() {
     ctx.fill();
   });
 
-  // Combo label — fades after 1.5s
+  // Snake eyes — drawn on head, oriented toward movement direction
+  if (snake.length > 0 && dir) {
+    const [hx, hy] = snake[0];
+    const [dx, dy] = dir;
+    const cx = hx * CELL + CELL / 2;
+    const cy = hy * CELL + CELL / 2;
+    const fwd = 3, side = 3.5;
+    [-1, 1].forEach(s => {
+      const ex = cx + dx * fwd - dy * s * side;
+      const ey = cy + dy * fwd + dx * s * side;
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath(); ctx.arc(ex, ey, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath(); ctx.arc(ex + dx * 0.9, ey + dy * 0.9, 1.1, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
   const now = Date.now();
+
+  // Combo label — fades after 1.5 s
   if (comboCount >= 2 && now < comboFadeAt) {
     const alpha = (comboFadeAt - now) / 1500;
     ctx.globalAlpha = alpha;
@@ -181,6 +223,22 @@ function draw() {
     ctx.font = 'bold 20px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(`x${comboCount} COMBO!`, canvas.width / 2, 28);
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+  }
+
+  // New best badge — top-right, fades after NEW_BEST_DURATION ms
+  if (newBestExpiry > now) {
+    const ratio = (newBestExpiry - now) / NEW_BEST_DURATION;
+    ctx.globalAlpha = Math.min(ratio * 4, 1);
+    ctx.shadowColor = '#facc15';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = '#facc15';
+    ctx.font = 'bold 13px "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('★ NEW BEST', canvas.width - 8, 20);
+    ctx.textAlign = 'left';
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   }
 }
@@ -205,10 +263,12 @@ function endGame() {
   clearTimeout(loopId);
   playGameOver();
   if (score > 0) saveScore(score);
-  overlayTitle.textContent = 'GAME OVER';
-  overlaySub.textContent   = `Score: ${score}`;
-  btn.textContent = 'PLAY AGAIN';
-  overlay.style.display = 'flex';
+  startShake(380, 7, () => {
+    overlayTitle.textContent = 'GAME OVER';
+    overlaySub.textContent   = `Score: ${score}`;
+    btn.textContent = 'PLAY AGAIN';
+    overlay.style.display = 'flex';
+  });
 }
 
 export function initGame() {
