@@ -30,6 +30,19 @@ let warpMode = false;
 let newBestExpiry = 0;
 const NEW_BEST_DURATION = 2500;
 
+// Shield power-up
+let shieldFood = null, shieldFoodExpiry = 0;
+let shieldActive = false, shieldExpiry = 0;
+
+// Poison food
+let poisonFood = null, poisonFoodExpiry = 0;
+
+// Score milestones
+const MILESTONES = [50, 100, 200, 300, 500];
+let milestonesHit = new Set();
+let milestoneFlashAt = 0, milestoneFlashScore = 0;
+const MILESTONE_DURATION = 2200;
+
 function getInitialSpeed() {
   const active = document.querySelector('.diff-btn.active');
   return active ? parseInt(active.dataset.speed, 10) : 120;
@@ -61,6 +74,21 @@ function startShake(duration, intensity, callback) {
   })(performance.now());
 }
 
+// ── Milestone celebration ─────────────────────────────────────────────
+function triggerMilestone(pts) {
+  milestoneFlashAt = Date.now();
+  milestoneFlashScore = pts;
+  // Rainbow burst: 8 locations with evenly-spaced hues
+  for (let i = 0; i < 8; i++) {
+    spawnParticles(
+      Math.floor(Math.random() * COLS),
+      Math.floor(Math.random() * ROWS),
+      CELL,
+      (i * 45) % 360,
+    );
+  }
+}
+
 function startGame() {
   snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
   dir = [1, 0]; nextDir = [1, 0];
@@ -71,6 +99,11 @@ function startGame() {
   bonusFood = null; bonusFoodExpiry = 0; foodEaten = 0;
   comboCount = 0; comboExpiry = 0; comboFadeAt = 0;
   newBestExpiry = 0;
+  shieldFood = null; shieldFoodExpiry = 0;
+  shieldActive = false; shieldExpiry = 0;
+  poisonFood = null; poisonFoodExpiry = 0;
+  milestonesHit = new Set();
+  milestoneFlashAt = 0;
   scoreEl.textContent = 0;
   overlay.style.display = 'none';
   clearTimeout(loopId);
@@ -93,14 +126,29 @@ function update() {
   } else {
     if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
   }
-  if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
+
+  // Self-collision — shield absorbs one hit
+  if (snake.some(s => s[0] === head[0] && s[1] === head[1])) {
+    if (shieldActive) {
+      shieldActive = false;
+      shieldExpiry = 0;
+    } else {
+      return endGame();
+    }
+  }
 
   snake.unshift(head);
   let grew = false;
 
-  // Regular food
+  const now = Date.now();
+
+  // Expire power-up foods and active shield
+  if (shieldFood && now >= shieldFoodExpiry) shieldFood = null;
+  if (poisonFood && now >= poisonFoodExpiry) poisonFood = null;
+  if (shieldActive && now >= shieldExpiry) shieldActive = false;
+
+  // ── Regular food ──
   if (head[0] === food[0] && head[1] === food[1]) {
-    const now = Date.now();
     comboCount = now < comboExpiry ? Math.min(comboCount + 1, 3) : 1;
     comboExpiry = now + 3000;
     comboFadeAt = now + 1500;
@@ -113,11 +161,25 @@ function update() {
     speed = Math.max(40, speed - 2);
     if (foodEaten % 5 === 0 && !bonusFood) {
       bonusFood = randFood([...snake, food]);
-      bonusFoodExpiry = Date.now() + 5000;
+      bonusFoodExpiry = now + 5000;
+    }
+    // Shield food every 8th regular food
+    if (foodEaten % 8 === 0 && !shieldFood) {
+      const excl = [...snake, food, ...(bonusFood ? [bonusFood] : [])];
+      shieldFood = randFood(excl);
+      shieldFoodExpiry = now + 6000;
+    }
+    // Poison food at offset interval (3, 10, 17, ...)
+    if (foodEaten % 7 === 3 && !poisonFood) {
+      const excl = [...snake, food,
+        ...(bonusFood  ? [bonusFood]  : []),
+        ...(shieldFood ? [shieldFood] : [])];
+      poisonFood = randFood(excl);
+      poisonFoodExpiry = now + 5000;
     }
   }
 
-  // Bonus food
+  // ── Bonus food ──
   if (bonusFood) {
     if (head[0] === bonusFood[0] && head[1] === bonusFood[1]) {
       score += 30;
@@ -125,9 +187,32 @@ function update() {
       spawnParticles(bonusFood[0], bonusFood[1], CELL);
       playEat();
       bonusFood = null;
-    } else if (Date.now() >= bonusFoodExpiry) {
+    } else if (now >= bonusFoodExpiry) {
       bonusFood = null;
     }
+  }
+
+  // ── Shield food pickup ──
+  if (shieldFood && head[0] === shieldFood[0] && head[1] === shieldFood[1]) {
+    shieldActive = true;
+    shieldExpiry = now + 5000;
+    grew = true;
+    spawnParticles(shieldFood[0], shieldFood[1], CELL, 200);
+    playEat();
+    shieldFood = null;
+  }
+
+  // ── Poison food ──
+  if (poisonFood && head[0] === poisonFood[0] && head[1] === poisonFood[1]) {
+    grew = true; // prevent normal tail pop; we do manual shrink
+    score += 5;
+    // Net shrink 2: unshift already added 1, pop 3 → net −2
+    for (let i = 0; i < 3; i++) {
+      if (snake.length > 2) snake.pop();
+    }
+    spawnParticles(poisonFood[0], poisonFood[1], CELL, 270);
+    playEat();
+    poisonFood = null;
   }
 
   if (grew) {
@@ -136,7 +221,14 @@ function update() {
       best = score;
       bestEl.textContent = best;
       localStorage.setItem('snake_best', best);
-      newBestExpiry = Date.now() + NEW_BEST_DURATION;
+      newBestExpiry = now + NEW_BEST_DURATION;
+    }
+    // Milestone celebration
+    for (const m of MILESTONES) {
+      if (!milestonesHit.has(m) && score >= m) {
+        milestonesHit.add(m);
+        triggerMilestone(m);
+      }
     }
   } else {
     snake.pop();
@@ -185,6 +277,51 @@ function draw() {
     ctx.fillRect(bx*CELL + 1, by*CELL + CELL - 4, (CELL - 2) * ratio, 3);
   }
 
+  // Shield food — cyan diamond, pulsing glow, countdown bar
+  if (shieldFood) {
+    const now = Date.now();
+    const pulse = 0.7 + 0.3 * Math.sin(now / 180);
+    const [sx, sy] = shieldFood;
+    const cx = sx * CELL + CELL / 2;
+    const cy = sy * CELL + CELL / 2;
+    const r = (CELL / 2 - 1) * pulse;
+    ctx.save();
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 8 + pulse * 6;
+    ctx.fillStyle = `hsl(200, 90%, ${55 + 15 * pulse}%)`;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r);
+    ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx, cy + r);
+    ctx.lineTo(cx - r, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    const ratio = Math.max(0, (shieldFoodExpiry - now) / 6000);
+    ctx.fillStyle = 'rgba(56,189,248,0.8)';
+    ctx.fillRect(sx*CELL + 1, sy*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
+  // Poison food — dark purple circle, countdown bar
+  if (poisonFood) {
+    const now = Date.now();
+    const pulse = 0.6 + 0.4 * Math.sin(now / 250);
+    const [px, py] = poisonFood;
+    const cx = px * CELL + CELL / 2;
+    const cy = py * CELL + CELL / 2;
+    ctx.save();
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 6 + pulse * 4;
+    ctx.fillStyle = `hsl(270, 70%, ${30 + 10 * pulse}%)`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL / 2 - 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    const ratio = Math.max(0, (poisonFoodExpiry - now) / 5000);
+    ctx.fillStyle = 'rgba(168,85,247,0.8)';
+    ctx.fillRect(px*CELL + 1, py*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
   // Snake
   snake.forEach(([x, y], i) => {
     const ratio = i / snake.length;
@@ -195,6 +332,21 @@ function draw() {
     ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
     ctx.fill();
   });
+
+  // Shield glow ring around snake head
+  if (shieldActive && Date.now() < shieldExpiry) {
+    const [hx, hy] = snake[0];
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 100);
+    ctx.save();
+    ctx.strokeStyle = `rgba(56, 189, 248, ${pulse})`;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(hx * CELL + CELL / 2, hy * CELL + CELL / 2, CELL / 2 + 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Snake eyes — drawn on head, oriented toward movement direction
   if (snake.length > 0 && dir) {
@@ -227,6 +379,20 @@ function draw() {
     ctx.textAlign = 'left';
   }
 
+  // Shield active indicator — bottom-left corner
+  if (shieldActive && now < shieldExpiry) {
+    const remaining = Math.ceil((shieldExpiry - now) / 1000);
+    ctx.save();
+    ctx.fillStyle = '#38bdf8';
+    ctx.shadowColor = '#38bdf8';
+    ctx.shadowBlur = 6;
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`SHIELD ${remaining}s`, 5, canvas.height - 5);
+    ctx.restore();
+  }
+
   // New best badge — top-right, fades after NEW_BEST_DURATION ms
   if (newBestExpiry > now) {
     const ratio = (newBestExpiry - now) / NEW_BEST_DURATION;
@@ -240,6 +406,25 @@ function draw() {
     ctx.textAlign = 'left';
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
+  }
+
+  // Score milestone flash — centered, fades over MILESTONE_DURATION
+  if (milestoneFlashAt > 0) {
+    const elapsed = now - milestoneFlashAt;
+    if (elapsed < MILESTONE_DURATION) {
+      const p = elapsed / MILESTONE_DURATION;
+      const alpha = p < 0.15 ? p / 0.15 : Math.max(0, 1 - (p - 0.15) / 0.85);
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.font = `bold ${44 - p * 8}px "Segoe UI", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#4ade80';
+      ctx.shadowColor = '#4ade80';
+      ctx.shadowBlur = 18;
+      ctx.fillText(`${milestoneFlashScore}!`, canvas.width / 2, canvas.height / 2 + 30);
+      ctx.restore();
+    }
   }
 }
 
