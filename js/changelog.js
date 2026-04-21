@@ -3,10 +3,10 @@ export const CHANGELOG = [
     version: 'v1.3',
     date: '2026-04-21 16:00',
     items: [
-      { type: 'new', text: 'Tính năng Pause: nhấn P hoặc Esc để dừng/tiếp tục game' },
-      { type: 'new', text: 'Golden Apple: sau mỗi 5 mồi thường, mồi vàng xuất hiện 5 giây (+30 điểm)' },
-      { type: 'new', text: 'Bảng xếp hạng Top Scores lưu 10 kết quả tốt nhất vào localStorage' },
-      { type: 'change', text: 'Tách codebase thành các module JS riêng (game, particles, scores, tabs, themes)' },
+      { type: 'new', text: '4 themes: Classic, Neon, Retro, Ocean — lưu localStorage' },
+      { type: 'new', text: 'Power-up food (ngôi sao vàng) mỗi 5 lần ăn: +50 điểm + slow 3.5s' },
+      { type: 'new', text: 'Sound effects qua Web Audio API (ăn, power-up, game over)' },
+      { type: 'change', text: 'Tách thành modules: game, themes, sounds, powerups, particles, scores, tabs' },
     ],
     by: 'Claude (claude-sonnet-4-6)',
   },
@@ -42,8 +42,7 @@ export const CHANGELOG = [
 ];
 
 export function renderChangelog() {
-  const clList = document.getElementById('cl-list');
-  if (!clList) return;
+  const list = document.getElementById('cl-list');
   CHANGELOG.forEach(entry => {
     const el = document.createElement('div');
     el.className = 'cl-entry';
@@ -57,6 +56,6 @@ export function renderChangelog() {
       </ul>
       <div class="cl-by">by ${entry.by}</div>
     `;
-    clList.appendChild(el);
+    list.appendChild(el);
   });
 }

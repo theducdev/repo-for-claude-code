@@ -1,9 +1,9 @@
 import { initTabs } from './tabs.js';
-import { initGame } from './game.js';
 import { renderChangelog } from './changelog.js';
-import { renderScores } from './scores.js';
+import { initThemes } from './themes.js';
+import { initGame } from './game.js';
 
 initTabs();
-initGame();
 renderChangelog();
-renderScores();
+initThemes();
+initGame();
