@@ -11,7 +11,6 @@
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
-    <button class="tab-btn" data-tab="scores">Scores</button>
     <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
@@ -22,40 +21,22 @@
       &nbsp;&nbsp;|&nbsp;&nbsp;
       Best: <span id="best">0</span>
     </div>
+    <div id="hud">
+      Mode: <span id="mode-text">NORMAL</span>
+      &nbsp;&nbsp;|&nbsp;&nbsp;
+      Boost: <span id="boost-bar">&#9632;&#9632;&#9632;&#9632;&#9632;</span>
+    </div>
 
     <div id="canvas-wrapper">
       <canvas id="c" width="400" height="400"></canvas>
       <div id="overlay">
         <h2 id="overlay-title">SNAKE</h2>
-        <p id="overlay-sub">Use Arrow Keys, WASD or Swipe</p>
+        <p id="overlay-sub">Arrow Keys / WASD to move</p>
         <button id="btn">PLAY</button>
       </div>
     </div>
 
-    <div id="theme-selector">
-      <label>Theme:</label>
-      <button class="theme-btn active" data-theme="classic" style="background:#4ade80" title="Classic"></button>
-      <button class="theme-btn"        data-theme="neon"    style="background:#00d4ff" title="Neon"></button>
-      <button class="theme-btn"        data-theme="retro"   style="background:#fbbf24" title="Retro"></button>
-      <button class="theme-btn"        data-theme="mono"    style="background:#e2e8f0" title="Mono"></button>
-    </div>
-
-    <div id="difficulty-selector">
-      <label>Difficulty:</label>
-      <button class="diff-btn" data-speed="200">Easy</button>
-      <button class="diff-btn active" data-speed="120">Normal</button>
-      <button class="diff-btn" data-speed="70">Hard</button>
-      <span class="diff-sep">&nbsp;&middot;&nbsp;</span>
-      <button id="warp-btn">WARP OFF</button>
-    </div>
-
-    <div id="controls">Arrow Keys / WASD / Swipe &nbsp;&middot;&nbsp; P to pause &nbsp;&middot;&nbsp; <button id="sound-btn">SFX ON</button></div>
-  </div>
-
-  <!-- Scores tab -->
-  <div id="scores-panel" class="tab-panel">
-    <p class="sc-header">Top 5 high scores</p>
-    <div class="sc-list" id="sc-list"></div>
+    <div id="controls">Arrows/WASD &middot; SPACE = Boost &middot; [ = Toggle Wall Wrap</div>
   </div>
 
   <!-- Changelog tab -->
