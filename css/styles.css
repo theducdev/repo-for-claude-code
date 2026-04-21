@@ -172,6 +172,26 @@ canvas {
 .diff-btn[data-speed="120"].active { border-color: #facc15; color: #facc15; }
 .diff-btn[data-speed="70"].active  { border-color: #f87171; color: #f87171; }
 
+.diff-sep { color: #333; font-size: 0.7rem; }
+
+/* ── Warp button ── */
+#warp-btn {
+  padding: 4px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#warp-btn:hover { color: #aaa; border-color: #555; }
+#warp-btn.active { border-color: #a78bfa; color: #a78bfa; }
+
 /* ── Controls bar ── */
 #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 

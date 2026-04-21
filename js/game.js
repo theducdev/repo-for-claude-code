@@ -17,6 +17,15 @@ let COLS, ROWS;
 let snake, dir, nextDir, food, score, best, loopId, speed, paused, running;
 let touchStartX = 0, touchStartY = 0;
 
+// Bonus food state
+let bonusFood = null, bonusFoodExpiry = 0, foodEaten = 0;
+
+// Combo state
+let comboCount = 0, comboExpiry = 0, comboFadeAt = 0;
+
+// Warp walls toggle
+let warpMode = false;
+
 function getInitialSpeed() {
   const active = document.querySelector('.diff-btn.active');
   return active ? parseInt(active.dataset.speed, 10) : 120;
@@ -37,6 +46,8 @@ function startGame() {
   score = 0; speed = getInitialSpeed();
   resetParticles();
   paused = false; running = true;
+  bonusFood = null; bonusFoodExpiry = 0; foodEaten = 0;
+  comboCount = 0; comboExpiry = 0; comboFadeAt = 0;
   scoreEl.textContent = 0;
   overlay.style.display = 'none';
   clearTimeout(loopId);
@@ -52,25 +63,57 @@ function loop() {
 
 function update() {
   dir = nextDir;
-  const head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+  let head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
 
-  if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+  if (warpMode) {
+    head = [(head[0] + COLS) % COLS, (head[1] + ROWS) % ROWS];
+  } else {
+    if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+  }
   if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
 
   snake.unshift(head);
+  let grew = false;
 
+  // Regular food
   if (head[0] === food[0] && head[1] === food[1]) {
-    score += 10;
+    const now = Date.now();
+    comboCount = now < comboExpiry ? Math.min(comboCount + 1, 3) : 1;
+    comboExpiry = now + 3000;
+    comboFadeAt = now + 1500;
+    score += 10 * comboCount;
+    grew = true;
+    spawnParticles(food[0], food[1], CELL);
+    playEat();
+    food = randFood([...snake]);
+    foodEaten++;
+    speed = Math.max(40, speed - 2);
+    if (foodEaten % 5 === 0 && !bonusFood) {
+      bonusFood = randFood([...snake, food]);
+      bonusFoodExpiry = Date.now() + 5000;
+    }
+  }
+
+  // Bonus food
+  if (bonusFood) {
+    if (head[0] === bonusFood[0] && head[1] === bonusFood[1]) {
+      score += 30;
+      grew = true;
+      spawnParticles(bonusFood[0], bonusFood[1], CELL);
+      playEat();
+      bonusFood = null;
+    } else if (Date.now() >= bonusFoodExpiry) {
+      bonusFood = null;
+    }
+  }
+
+  if (grew) {
     scoreEl.textContent = score;
     if (score > best) {
       best = score;
       bestEl.textContent = best;
       localStorage.setItem('snake_best', best);
     }
-    spawnParticles(food[0], food[1], CELL);
-    playEat();
-    food = randFood(snake);
-    speed = Math.max(40, speed - 2);
   } else {
     snake.pop();
   }
@@ -95,12 +138,30 @@ function draw() {
 
   drawParticles(ctx);
 
+  // Regular food
   const [fx, fy] = food;
   ctx.fillStyle = t.food;
   ctx.beginPath();
   ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
   ctx.fill();
 
+  // Bonus food — golden, pulsing glow, countdown bar
+  if (bonusFood) {
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 150);
+    const [bx, by] = bonusFood;
+    ctx.shadowColor = 'hsl(45, 100%, 65%)';
+    ctx.shadowBlur = 8 + pulse * 8;
+    ctx.fillStyle = `hsl(45, 100%, ${55 + pulse * 15}%)`;
+    ctx.beginPath();
+    ctx.arc(bx*CELL + CELL/2, by*CELL + CELL/2, CELL/2 - 1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    const ratio = Math.max(0, (bonusFoodExpiry - Date.now()) / 5000);
+    ctx.fillStyle = 'rgba(251,191,36,0.8)';
+    ctx.fillRect(bx*CELL + 1, by*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
+  // Snake
   snake.forEach(([x, y], i) => {
     const ratio = i / snake.length;
     ctx.fillStyle = i === 0
@@ -110,6 +171,18 @@ function draw() {
     ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
     ctx.fill();
   });
+
+  // Combo label — fades after 1.5s
+  const now = Date.now();
+  if (comboCount >= 2 && now < comboFadeAt) {
+    const alpha = (comboFadeAt - now) / 1500;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = comboCount >= 3 ? '#ff6b6b' : '#facc15';
+    ctx.font = 'bold 20px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`x${comboCount} COMBO!`, canvas.width / 2, 28);
+    ctx.globalAlpha = 1;
+  }
 }
 
 function togglePause() {
@@ -198,5 +271,12 @@ export function initGame() {
       document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('active'));
       b.classList.add('active');
     });
+  });
+
+  const warpBtn = document.getElementById('warp-btn');
+  warpBtn?.addEventListener('click', () => {
+    warpMode = !warpMode;
+    warpBtn.textContent = warpMode ? 'WARP ON' : 'WARP OFF';
+    warpBtn.classList.toggle('active', warpMode);
   });
 }
