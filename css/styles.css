@@ -137,7 +137,59 @@ canvas {
 .theme-btn.active { border-color: #fff; transform: scale(1.25); }
 .theme-btn:hover:not(.active) { transform: scale(1.1); }
 
+/* ── Difficulty selector ── */
+#difficulty-selector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+#difficulty-selector label {
+  font-size: 0.7rem;
+  color: #444;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.diff-btn {
+  padding: 4px 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.diff-btn:hover:not(.active) { color: #aaa; border-color: #555; }
+
+.diff-btn[data-speed="200"].active { border-color: #4ade80; color: #4ade80; }
+.diff-btn[data-speed="120"].active { border-color: #facc15; color: #facc15; }
+.diff-btn[data-speed="70"].active  { border-color: #f87171; color: #f87171; }
+
+/* ── Controls bar ── */
 #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
+
+#sound-btn {
+  padding: 2px 8px;
+  border: 1px solid #333;
+  border-radius: 3px;
+  background: transparent;
+  color: #555;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.15s;
+  vertical-align: middle;
+}
+
+#sound-btn:hover { color: #aaa; border-color: #555; }
 
 /* ── Scores tab ── */
 #scores-panel { width: 404px; }

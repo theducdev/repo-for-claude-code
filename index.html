@@ -27,7 +27,7 @@
       <canvas id="c" width="400" height="400"></canvas>
       <div id="overlay">
         <h2 id="overlay-title">SNAKE</h2>
-        <p id="overlay-sub">Use Arrow Keys or WASD</p>
+        <p id="overlay-sub">Use Arrow Keys, WASD or Swipe</p>
         <button id="btn">PLAY</button>
       </div>
     </div>
@@ -40,7 +40,14 @@
       <button class="theme-btn"        data-theme="mono"    style="background:#e2e8f0" title="Mono"></button>
     </div>
 
-    <div id="controls">Arrow Keys / WASD &nbsp;&middot;&nbsp; P to pause</div>
+    <div id="difficulty-selector">
+      <label>Difficulty:</label>
+      <button class="diff-btn" data-speed="200">Easy</button>
+      <button class="diff-btn active" data-speed="120">Normal</button>
+      <button class="diff-btn" data-speed="70">Hard</button>
+    </div>
+
+    <div id="controls">Arrow Keys / WASD / Swipe &nbsp;&middot;&nbsp; P to pause &nbsp;&middot;&nbsp; <button id="sound-btn">SFX ON</button></div>
   </div>
 
   <!-- Scores tab -->

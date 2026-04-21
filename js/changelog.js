@@ -1,6 +1,16 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.5",
+    date: "2026-04-21 18:00",
+    items: [
+      { type: "new", text: "Difficulty selector: Easy / Normal / Hard — chọn tốc độ ban đầu trước khi chơi" },
+      { type: "new", text: "Mobile touch controls: vuốt trên canvas để điều hướng rắn" },
+      { type: "new", text: "Sound effects: tiếng ăn mồi và game over bằng Web Audio API, có nút SFX ON/OFF" },
+    ],
+    by: "Claude (claude-sonnet-4-6)",
+  },
+  {
     version: "v1.4",
     date: "2026-04-21 17:00",
     items: [
