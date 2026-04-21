@@ -94,7 +94,8 @@ canvas {
 
 #overlay p { color: #aaa; font-size: 0.85rem; letter-spacing: 1px; }
 
-#overlay button {
+/* Play / Resume / Play Again button */
+#btn {
   margin-top: 8px;
   padding: 10px 32px;
   background: #4ade80;
@@ -108,7 +109,55 @@ canvas {
   transition: background 0.2s, opacity 0.2s;
 }
 
-#overlay button:hover { opacity: 0.85; }
+#btn:hover { opacity: 0.85; }
+
+/* ── Difficulty selector ── */
+.diff-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Hide difficulty row when overlay is showing for pause */
+.overlay-pause .diff-row { display: none; }
+
+.diff-label {
+  font-size: 0.65rem;
+  color: #555;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.diff-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.diff-btn {
+  padding: 5px 14px;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.diff-btn.selected {
+  border-color: #4ade80;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.diff-btn:hover:not(.selected) {
+  color: #aaa;
+  border-color: #444;
+}
 
 /* ── Theme selector ── */
 #theme-selector {
