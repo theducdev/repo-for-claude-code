@@ -1,6 +1,7 @@
 import { getCurrentTheme } from './themes.js';
 import { resetParticles, spawnParticles, updateParticles, drawParticles } from './particles.js';
 import { saveScore } from './scores.js';
+import { playEat, playGameOver } from './sounds.js';
 
 const CELL = 20;
 
@@ -14,6 +15,12 @@ const DIRS = {
 let canvas, ctx, scoreEl, bestEl, overlay, overlayTitle, overlaySub, btn;
 let COLS, ROWS;
 let snake, dir, nextDir, food, score, best, loopId, speed, paused, running;
+let touchStartX = 0, touchStartY = 0;
+
+function getInitialSpeed() {
+  const active = document.querySelector('.diff-btn.active');
+  return active ? parseInt(active.dataset.speed, 10) : 120;
+}
 
 function randFood(sn) {
   let pos;
@@ -27,7 +34,7 @@ function startGame() {
   snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
   dir = [1, 0]; nextDir = [1, 0];
   food = randFood(snake);
-  score = 0; speed = 120;
+  score = 0; speed = getInitialSpeed();
   resetParticles();
   paused = false; running = true;
   scoreEl.textContent = 0;
@@ -61,8 +68,9 @@ function update() {
       localStorage.setItem('snake_best', best);
     }
     spawnParticles(food[0], food[1], CELL);
+    playEat();
     food = randFood(snake);
-    speed = Math.max(60, speed - 2);
+    speed = Math.max(40, speed - 2);
   } else {
     snake.pop();
   }
@@ -122,6 +130,7 @@ function togglePause() {
 function endGame() {
   running = false; paused = false;
   clearTimeout(loopId);
+  playGameOver();
   if (score > 0) saveScore(score);
   overlayTitle.textContent = 'GAME OVER';
   overlaySub.textContent   = `Score: ${score}`;
@@ -161,5 +170,33 @@ export function initGame() {
     e.preventDefault();
     if (dir && d[0] === -dir[0] && d[1] === -dir[1]) return;
     nextDir = d;
+  });
+
+  canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    e.preventDefault();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    let newDir;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      newDir = dx > 0 ? [1, 0] : [-1, 0];
+    } else {
+      newDir = dy > 0 ? [0, 1] : [0, -1];
+    }
+    if (dir && newDir[0] === -dir[0] && newDir[1] === -dir[1]) return;
+    nextDir = newDir;
+    e.preventDefault();
+  }, { passive: false });
+
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
   });
 }
