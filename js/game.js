@@ -11,9 +11,20 @@ const DIRS = {
   ArrowRight: [1,  0], d: [1,   0],
 };
 
+const DIFFICULTIES = {
+  easy:   { initSpeed: 150, minSpeed: 90, step: 1 },
+  normal: { initSpeed: 120, minSpeed: 60, step: 2 },
+  hard:   { initSpeed: 80,  minSpeed: 40, step: 3 },
+};
+
+const COMBO_WINDOW  = 3000; // ms between eats to sustain a combo
+const COMBO_TEXT_MS = 1400; // ms the combo text is visible
+
 let canvas, ctx, scoreEl, bestEl, overlay, overlayTitle, overlaySub, btn;
 let COLS, ROWS;
 let snake, dir, nextDir, food, score, best, loopId, speed, paused, running;
+let diffConfig = DIFFICULTIES.normal;
+let comboCount = 0, lastEatTime = 0, comboTextExpiry = 0, comboTextStr = '';
 
 function randFood(sn) {
   let pos;
@@ -23,14 +34,36 @@ function randFood(sn) {
   return pos;
 }
 
+// ── Screen shake ─────────────────────────────────────────────────────
+function startShake(duration, intensity, callback) {
+  const start = performance.now();
+  (function step(now) {
+    const elapsed = now - start;
+    if (elapsed >= duration) {
+      canvas.style.transform = '';
+      if (callback) callback();
+      return;
+    }
+    const decay = 1 - elapsed / duration;
+    const x = (Math.random() - 0.5) * 2 * intensity * decay;
+    const y = (Math.random() - 0.5) * 2 * intensity * decay;
+    canvas.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+    requestAnimationFrame(step);
+  })(performance.now());
+}
+
+// ── Game lifecycle ────────────────────────────────────────────────────
 function startGame() {
-  snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
+  snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
   dir = [1, 0]; nextDir = [1, 0];
   food = randFood(snake);
-  score = 0; speed = 120;
+  score = 0;
+  speed = diffConfig.initSpeed;
+  comboCount = 0; lastEatTime = 0; comboTextExpiry = 0;
   resetParticles();
   paused = false; running = true;
   scoreEl.textContent = 0;
+  overlay.classList.remove('overlay-pause');
   overlay.style.display = 'none';
   clearTimeout(loopId);
   loop();
@@ -39,6 +72,7 @@ function startGame() {
 function loop() {
   if (!running) return;
   update();
+  if (!running) return; // endGame was triggered inside update
   draw();
   loopId = setTimeout(loop, speed);
 }
@@ -53,7 +87,24 @@ function update() {
   snake.unshift(head);
 
   if (head[0] === food[0] && head[1] === food[1]) {
-    score += 10;
+    const now = Date.now();
+
+    if (lastEatTime > 0 && now - lastEatTime < COMBO_WINDOW) {
+      comboCount++;
+    } else {
+      comboCount = 1;
+    }
+    lastEatTime = now;
+
+    let pts = 10;
+    if (comboCount >= 2) {
+      const bonus = Math.min(comboCount - 1, 4) * 5;
+      pts += bonus;
+      comboTextStr = `COMBO ×${comboCount}   +${pts} pts`;
+      comboTextExpiry = now + COMBO_TEXT_MS;
+    }
+
+    score += pts;
     scoreEl.textContent = score;
     if (score > best) {
       best = score;
@@ -62,7 +113,7 @@ function update() {
     }
     spawnParticles(food[0], food[1], CELL);
     food = randFood(snake);
-    speed = Math.max(60, speed - 2);
+    speed = Math.max(diffConfig.minSpeed, speed - diffConfig.step);
   } else {
     snake.pop();
   }
@@ -79,10 +130,10 @@ function draw() {
   ctx.strokeStyle = t.grid;
   ctx.lineWidth = 0.5;
   for (let x = 0; x <= COLS; x++) {
-    ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
   }
   for (let y = 0; y <= ROWS; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
   }
 
   drawParticles(ctx);
@@ -90,18 +141,31 @@ function draw() {
   const [fx, fy] = food;
   ctx.fillStyle = t.food;
   ctx.beginPath();
-  ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
+  ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
   ctx.fill();
 
   snake.forEach(([x, y], i) => {
     const ratio = i / snake.length;
     ctx.fillStyle = i === 0
       ? t.snake
-      : `hsl(${t.snakeHue - ratio*40}, 70%, ${50 - ratio*15}%)`;
+      : `hsl(${t.snakeHue - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
     ctx.beginPath();
-    ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
+    ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
     ctx.fill();
   });
+
+  // Combo text — floats upward and fades out
+  const now = Date.now();
+  if (comboTextExpiry > now) {
+    const ratio = (comboTextExpiry - now) / COMBO_TEXT_MS;
+    ctx.globalAlpha = Math.min(ratio * 2.5, 1);
+    ctx.fillStyle = '#facc15';
+    ctx.font = 'bold 15px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(comboTextStr, canvas.width / 2, 26 + (1 - ratio) * -14);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
 }
 
 function togglePause() {
@@ -109,11 +173,13 @@ function togglePause() {
   paused = !paused;
   if (paused) {
     clearTimeout(loopId);
+    overlay.classList.add('overlay-pause');
     overlayTitle.textContent = 'PAUSED';
     overlaySub.textContent   = 'Press P to resume';
     btn.textContent = 'RESUME';
     overlay.style.display = 'flex';
   } else {
+    overlay.classList.remove('overlay-pause');
     overlay.style.display = 'none';
     loop();
   }
@@ -123,27 +189,41 @@ function endGame() {
   running = false; paused = false;
   clearTimeout(loopId);
   if (score > 0) saveScore(score);
-  overlayTitle.textContent = 'GAME OVER';
-  overlaySub.textContent   = `Score: ${score}`;
-  btn.textContent = 'PLAY AGAIN';
-  overlay.style.display = 'flex';
+  draw(); // draw final state before shaking
+  startShake(380, 7, () => {
+    overlay.classList.remove('overlay-pause');
+    overlayTitle.textContent = 'GAME OVER';
+    overlaySub.textContent   = `Score: ${score}`;
+    btn.textContent = 'PLAY AGAIN';
+    overlay.style.display = 'flex';
+  });
 }
 
 export function initGame() {
   canvas = document.getElementById('c');
-  ctx = canvas.getContext('2d');
-  scoreEl = document.getElementById('score');
-  bestEl  = document.getElementById('best');
-  overlay = document.getElementById('overlay');
+  ctx    = canvas.getContext('2d');
+  scoreEl      = document.getElementById('score');
+  bestEl       = document.getElementById('best');
+  overlay      = document.getElementById('overlay');
   overlayTitle = document.getElementById('overlay-title');
   overlaySub   = document.getElementById('overlay-sub');
-  btn = document.getElementById('btn');
+  btn          = document.getElementById('btn');
 
   COLS = canvas.width  / CELL;
   ROWS = canvas.height / CELL;
 
   best = parseInt(localStorage.getItem('snake_best') || '0');
   bestEl.textContent = best;
+
+  // Difficulty selector — only effective before a game starts
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      if (running) return;
+      document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('selected'));
+      b.classList.add('selected');
+      diffConfig = DIFFICULTIES[b.dataset.diff] || DIFFICULTIES.normal;
+    });
+  });
 
   btn.addEventListener('click', () => {
     if (paused) togglePause();
