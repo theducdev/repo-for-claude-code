@@ -14,10 +14,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       min-height: 100vh;
-      gap: 12px;
-      padding: 20px 16px 32px;
+      gap: 16px;
     }
 
     h1 {
@@ -25,32 +24,7 @@
       letter-spacing: 6px;
       color: #4ade80;
       text-transform: uppercase;
-    }
-
-    #tagline {
-      font-size: 0.7rem;
-      color: #444;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      text-align: center;
-      margin-top: -4px;
-      padding: 0 8px;
-    }
-
-    #tagline .dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      background: #4ade80;
-      border-radius: 50%;
-      margin-right: 6px;
-      vertical-align: middle;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.3; transform: scale(0.7); }
+      transition: color 0.3s;
     }
 
     /* ── Tabs ── */
@@ -83,7 +57,7 @@
 
     .tab-btn:hover:not(.active) { color: #aaa; }
 
-    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 440px; }
+    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 16px; }
     .tab-panel.active { display: flex; }
 
     /* ── Game tab ── */
@@ -98,17 +72,10 @@
 
     #scoreboard span { color: #fff; font-weight: bold; }
 
-    /* Canvas scales to viewport width, capped at 400px, stays square */
-    #canvas-wrapper {
-      position: relative;
-      width: min(400px, calc(100vw - 32px));
-      aspect-ratio: 1 / 1;
-    }
+    #canvas-wrapper { position: relative; }
 
     canvas {
       display: block;
-      width: 100%;
-      height: 100%;
       border: 2px solid #2a2a2a;
       border-radius: 4px;
       background: #111;
@@ -145,152 +112,104 @@
       font-weight: bold;
       letter-spacing: 2px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, opacity 0.2s;
     }
 
-    #overlay button:hover { background: #22c55e; }
+    #overlay button:hover { opacity: 0.85; }
 
-    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; text-align: center; }
-
-    /* ── D-pad: hidden on desktop pointer devices ── */
-    #dpad {
-      display: grid;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(3, 56px);
-      gap: 4px;
+    /* ── Theme selector ── */
+    #theme-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
 
-    @media (hover: hover) and (pointer: fine) {
-      #dpad { display: none; }
+    #theme-selector label {
+      font-size: 0.7rem;
+      color: #444;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-right: 4px;
     }
 
-    #dpad button {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 10px;
-      color: #aaa;
-      font-size: 1.4rem;
+    .theme-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid transparent;
       cursor: pointer;
-      transition: background 0.1s, color 0.1s, transform 0.08s;
-      touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
+      transition: transform 0.15s, border-color 0.15s;
     }
 
-    #dpad button:active {
-      background: #4ade80;
-      color: #000;
-      transform: scale(0.92);
-    }
+    .theme-btn.active { border-color: #fff; transform: scale(1.25); }
+    .theme-btn:hover:not(.active) { transform: scale(1.1); }
 
-    #dpad .dpad-empty {
-      background: transparent;
-      border: none;
-      pointer-events: none;
-    }
+    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 
-    /* ── High Score Board ── */
-    #highscore-board {
-      width: 100%;
-    }
+    /* ── Scores tab ── */
+    #scores-panel { width: 404px; }
 
-    .hs-header {
+    .sc-header {
       font-size: 0.7rem;
       color: #444;
       letter-spacing: 2px;
       text-transform: uppercase;
       margin-bottom: 8px;
+      align-self: flex-start;
+    }
+
+    .sc-list {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .hs-clear-btn {
-      background: none;
-      border: 1px solid #2a2a2a;
-      color: #333;
-      font-size: 0.65rem;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s;
-    }
-
-    .hs-clear-btn:hover { color: #f87171; border-color: #f87171; }
-
-    .hs-table {
+      flex-direction: column;
+      gap: 8px;
       width: 100%;
-      border-collapse: collapse;
     }
 
-    .hs-table tr {
-      border-bottom: 1px solid #1a1a1a;
+    .sc-entry {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
-    .hs-table tr:last-child { border-bottom: none; }
-
-    .hs-table td {
-      padding: 7px 10px;
-      font-size: 0.8rem;
-    }
-
-    .hs-rank {
-      color: #333;
-      width: 28px;
-      text-align: center;
+    .sc-rank {
+      font-size: 0.85rem;
       font-weight: bold;
+      color: #333;
+      width: 24px;
+      text-align: center;
+      flex-shrink: 0;
     }
 
-    .hs-rank.gold   { color: #facc15; }
-    .hs-rank.silver { color: #94a3b8; }
-    .hs-rank.bronze { color: #c2844a; }
+    .sc-rank.gold   { color: #fbbf24; }
+    .sc-rank.silver { color: #94a3b8; }
+    .sc-rank.bronze { color: #cd7f5e; }
 
-    .hs-score {
+    .sc-score {
+      font-size: 1rem;
+      font-weight: bold;
       color: #4ade80;
-      font-weight: bold;
-      font-size: 0.9rem;
-      min-width: 60px;
     }
 
-    .hs-date {
-      color: #444;
+    .sc-date {
       font-size: 0.7rem;
-      text-align: right;
+      color: #444;
+      margin-left: auto;
     }
 
-    .hs-empty {
-      text-align: center;
-      color: #333;
-      padding: 16px;
+    .sc-empty {
       font-size: 0.8rem;
+      color: #333;
       letter-spacing: 1px;
-    }
-
-    .hs-new-badge {
-      display: inline-block;
-      background: #4ade80;
-      color: #000;
-      font-size: 0.6rem;
-      font-weight: bold;
-      letter-spacing: 1px;
-      padding: 1px 5px;
-      border-radius: 3px;
-      margin-left: 6px;
-      vertical-align: middle;
-      animation: fadeBadge 3s forwards;
-    }
-
-    @keyframes fadeBadge {
-      0%, 70% { opacity: 1; }
-      100%     { opacity: 0; }
+      text-align: center;
+      padding: 32px 0;
     }
 
     /* ── Changelog tab ── */
-    #changelog-panel {
-      width: 100%;
-    }
+    #changelog-panel { width: 404px; }
 
     .cl-header {
       font-size: 0.7rem;
@@ -304,7 +223,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 60vh;
+      max-height: 420px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -334,10 +253,7 @@
       letter-spacing: 1px;
     }
 
-    .cl-date {
-      font-size: 0.7rem;
-      color: #444;
-    }
+    .cl-date { font-size: 0.7rem; color: #444; }
 
     .cl-items {
       list-style: none;
@@ -353,38 +269,20 @@
       position: relative;
     }
 
-    .cl-items li::before {
-      content: '\2192';
-      position: absolute;
-      left: 0;
-      color: #333;
-    }
-
-    .cl-items li.new::before { color: #4ade80; }
-    .cl-items li.fix::before { content: '\2726'; color: #facc15; }
+    .cl-items li::before   { content: '\2192'; position: absolute; left: 0; color: #333; }
+    .cl-items li.new::before    { color: #4ade80; }
+    .cl-items li.fix::before    { content: '\2726'; color: #facc15; }
     .cl-items li.change::before { content: '\25C6'; color: #60a5fa; }
 
-    .cl-by {
-      margin-top: 8px;
-      font-size: 0.65rem;
-      color: #333;
-      letter-spacing: 1px;
-    }
-
-    /* ── Small mobile (<= 380px) ── */
-    @media (max-width: 380px) {
-      h1 { font-size: 1.5rem; letter-spacing: 4px; }
-      #tagline { font-size: 0.65rem; }
-      #overlay h2 { font-size: 1.4rem; }
-    }
+    .cl-by { margin-top: 8px; font-size: 0.65rem; color: #333; letter-spacing: 1px; }
   </style>
 </head>
 <body>
   <h1>Snake</h1>
-  <p id="tagline"><span class="dot"></span>Coded by AI · Operated by AI · New features ship continuously</p>
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
+    <button class="tab-btn" data-tab="scores">Scores</button>
     <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
@@ -405,28 +303,21 @@
       </div>
     </div>
 
-    <div id="controls">Arrow Keys / WASD · Swipe on canvas · D-pad below</div>
-
-    <div id="dpad">
-      <div class="dpad-empty"></div>
-      <button id="btn-up" aria-label="Up">&#9650;</button>
-      <div class="dpad-empty"></div>
-      <button id="btn-left" aria-label="Left">&#9664;</button>
-      <div class="dpad-empty"></div>
-      <button id="btn-right" aria-label="Right">&#9654;</button>
-      <div class="dpad-empty"></div>
-      <button id="btn-down" aria-label="Down">&#9660;</button>
-      <div class="dpad-empty"></div>
+    <div id="theme-selector">
+      <label>Theme:</label>
+      <button class="theme-btn active" data-theme="classic" style="background:#4ade80" title="Classic"></button>
+      <button class="theme-btn"        data-theme="neon"    style="background:#00d4ff" title="Neon"></button>
+      <button class="theme-btn"        data-theme="retro"   style="background:#fbbf24" title="Retro"></button>
+      <button class="theme-btn"        data-theme="mono"    style="background:#e2e8f0" title="Mono"></button>
     </div>
 
-    <!-- High Score Board -->
-    <div id="highscore-board">
-      <div class="hs-header">
-        <span>Top Scores</span>
-        <button class="hs-clear-btn" id="hs-clear">Clear</button>
-      </div>
-      <table class="hs-table" id="hs-table"></table>
-    </div>
+    <div id="controls">Arrow Keys / WASD &nbsp;·&nbsp; P to pause</div>
+  </div>
+
+  <!-- Scores tab -->
+  <div id="scores-panel" class="tab-panel">
+    <p class="sc-header">Top 5 high scores</p>
+    <div class="sc-list" id="sc-list"></div>
   </div>
 
   <!-- Changelog tab -->
@@ -440,34 +331,12 @@
     // Claude updates this array each time a new feature is shipped.
     const CHANGELOG = [
       {
-        version: "v1.5",
-        date: "2026-04-21 15:45",
-        items: [
-          { type: "new", text: "Canvas co giãn theo viewport, cẩp tối đa 400px, giữ tỷ lệ 1:1" },
-          { type: "change", text: "Xóa fixed width trên tất cả element, dùng fluid layout" },
-          { type: "new", text: "D-pad ẩn trên PC (hover + mouse), hiện trên mobile/touch" },
-          { type: "change", text: "Nút D-pad to hơn (56px) dễ chạm tay" },
-          { type: "new", text: "Body có padding an toàn, cuộn mượt trên mobile" },
-          { type: "change", text: "Font nhỏ hơn trên màn hình ≤ 380px" },
-        ],
-        by: "Claude (claude-sonnet-4-6)",
-      },
-      {
-        version: "v1.4",
-        date: "2026-04-21 15:35",
-        items: [
-          { type: "new", text: "High Score Board: lưu top 5 điểm cao nhất vào localStorage" },
-          { type: "new", text: "Hiển thị huy hiệu NEW khi lập kỷ lục mới" },
-          { type: "new", text: "Nút Clear để xóa bảng điểm" },
-        ],
-        by: "Claude (claude-sonnet-4-6)",
-      },
-      {
         version: "v1.3",
-        date: "2026-04-21 15:21",
+        date: "2026-04-21 16:00",
         items: [
-          { type: "new", text: "Mobile touch controls: vuốt trên canvas để đổi hướng" },
-          { type: "new", text: "On-screen D-pad (4 nút mũi tên) hoạt động trên mọi thiết bị" },
+          { type: "new", text: "Color themes: Classic / Neon / Retro / Mono" },
+          { type: "new", text: "Pause game bằng phím P (hoặc click Resume)" },
+          { type: "new", text: "High score board — lưu top 5 điểm cao nhất" },
         ],
         by: "Claude (claude-sonnet-4-6)",
       },
@@ -502,6 +371,32 @@
       },
     ];
 
+    // ── Themes ──────────────────────────────────────────────────────
+    const THEMES = {
+      classic: { snake: '#4ade80', snakeHue: 140, food: '#f87171', bg: '#111',    grid: '#1a1a1a' },
+      neon:    { snake: '#00d4ff', snakeHue: 190, food: '#ff6b9d', bg: '#0a0a1a', grid: '#12122a' },
+      retro:   { snake: '#fbbf24', snakeHue:  45, food: '#f97316', bg: '#1a0f00', grid: '#241500' },
+      mono:    { snake: '#e2e8f0', snakeHue: 215, food: '#94a3b8', bg: '#0f172a', grid: '#1e293b' },
+    };
+
+    let currentTheme = localStorage.getItem('snake_theme') || 'classic';
+
+    function applyTheme(name) {
+      currentTheme = name;
+      localStorage.setItem('snake_theme', name);
+      const t = THEMES[name];
+      document.querySelector('h1').style.color = t.snake;
+      const btn = document.getElementById('btn');
+      if (btn) btn.style.background = t.snake;
+      document.querySelectorAll('.theme-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.theme === name);
+      });
+    }
+
+    document.querySelectorAll('.theme-btn').forEach(b => {
+      b.addEventListener('click', () => applyTheme(b.dataset.theme));
+    });
+
     // ── Render changelog ────────────────────────────────────────────
     const clList = document.getElementById('cl-list');
     CHANGELOG.forEach(entry => {
@@ -520,6 +415,42 @@
       clList.appendChild(el);
     });
 
+    // ── High score board ────────────────────────────────────────────
+    let highScores = JSON.parse(localStorage.getItem('snake_hiscores') || '[]');
+
+    function renderScores() {
+      const scList = document.getElementById('sc-list');
+      scList.innerHTML = '';
+      if (highScores.length === 0) {
+        scList.innerHTML = '<div class="sc-empty">No scores yet — play a game!</div>';
+        return;
+      }
+      const rankClass = ['gold', 'silver', 'bronze'];
+      highScores.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'sc-entry';
+        el.innerHTML = `
+          <span class="sc-rank ${rankClass[i] || ''}">#${i + 1}</span>
+          <span class="sc-score">${s.score}</span>
+          <span class="sc-date">${s.date}</span>
+        `;
+        scList.appendChild(el);
+      });
+    }
+
+    function saveScore(pts) {
+      const now = new Date();
+      const p = n => String(n).padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
+      highScores.push({ score: pts, date: dateStr });
+      highScores.sort((a, b) => b.score - a.score);
+      highScores = highScores.slice(0, 5);
+      localStorage.setItem('snake_hiscores', JSON.stringify(highScores));
+      renderScores();
+    }
+
+    renderScores();
+
     // ── Tab switching ───────────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -530,66 +461,18 @@
       });
     });
 
-    // ── High Score Board ────────────────────────────────────────────
-    const HS_KEY = 'snake_highscores';
-    const HS_MAX = 5;
-
-    function loadScores() {
-      try { return JSON.parse(localStorage.getItem(HS_KEY)) || []; }
-      catch { return []; }
-    }
-
-    function saveScore(s) {
-      if (s <= 0) return -1;
-      const scores = loadScores();
-      const now = new Date();
-      const pad = n => String(n).padStart(2, '0');
-      const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-      scores.push({ score: s, date: dateStr });
-      scores.sort((a, b) => b.score - a.score);
-      const trimmed = scores.slice(0, HS_MAX);
-      localStorage.setItem(HS_KEY, JSON.stringify(trimmed));
-      return trimmed.findIndex(e => e.score === s && e.date === dateStr);
-    }
-
-    function renderScores(newIdx) {
-      const scores = loadScores();
-      const table = document.getElementById('hs-table');
-      const rankClass = ['gold', 'silver', 'bronze'];
-      if (scores.length === 0) {
-        table.innerHTML = `<tr><td class="hs-empty">No scores yet — play a game!</td></tr>`;
-        return;
-      }
-      table.innerHTML = scores.map((e, i) => `
-        <tr>
-          <td class="hs-rank ${rankClass[i] || ''}">${i + 1}</td>
-          <td class="hs-score">${e.score}${
-            i === newIdx ? '<span class="hs-new-badge">NEW</span>' : ''
-          }</td>
-          <td class="hs-date">${e.date}</td>
-        </tr>
-      `).join('');
-    }
-
-    document.getElementById('hs-clear').addEventListener('click', () => {
-      localStorage.removeItem(HS_KEY);
-      renderScores(-1);
-    });
-
-    renderScores(-1);
-
     // ── Game ────────────────────────────────────────────────────────
     const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
-    const bestEl = document.getElementById('best');
+    const bestEl  = document.getElementById('best');
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlay-title');
-    const overlaySub = document.getElementById('overlay-sub');
+    const overlaySub   = document.getElementById('overlay-sub');
     const btn = document.getElementById('btn');
 
     const CELL = 20;
-    const COLS = canvas.width / CELL;
+    const COLS = canvas.width  / CELL;
     const ROWS = canvas.height / CELL;
 
     const DIRS = {
@@ -599,16 +482,16 @@
       ArrowRight: [1,  0], d: [1,   0],
     };
 
-    let snake, dir, nextDir, food, score, best, loopId, speed, particles, gameRunning;
+    let snake, dir, nextDir, food, score, best, loopId, speed, particles, paused, running;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
 
-    function randFood(snake) {
+    function randFood(sn) {
       let pos;
       do {
         pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (snake.some(s => s[0] === pos[0] && s[1] === pos[1]));
+      } while (sn.some(s => s[0] === pos[0] && s[1] === pos[1]));
       return pos;
     }
 
@@ -622,22 +505,18 @@
         const spd = 1.8 + Math.random() * 2.8;
         const hue = Math.random() * 60 + 10;
         particles.push({
-          x: cx,
-          y: cy,
+          x: cx, y: cy,
           vx: Math.cos(angle) * spd,
           vy: Math.sin(angle) * spd,
-          life: 1,
-          hue,
+          life: 1, hue,
         });
       }
     }
 
     function updateParticles() {
       particles = particles.filter(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.12;
-        p.vx *= 0.96;
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.12; p.vx *= 0.96;
         p.life -= 0.035;
         return p.life > 0;
       });
@@ -654,22 +533,22 @@
       ctx.globalAlpha = 1;
     }
 
+    // ── Game flow ────────────────────────────────────────────────────
     function startGame() {
       snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
-      dir = [1, 0];
-      nextDir = [1, 0];
+      dir = [1, 0]; nextDir = [1, 0];
       food = randFood(snake);
-      score = 0;
-      speed = 120;
+      score = 0; speed = 120;
       particles = [];
+      paused = false; running = true;
       scoreEl.textContent = 0;
-      gameRunning = true;
       overlay.style.display = 'none';
-      if (loopId) clearTimeout(loopId);
+      clearTimeout(loopId);
       loop();
     }
 
     function loop() {
+      if (!running) return;
       update();
       draw();
       loopId = setTimeout(loop, speed);
@@ -703,10 +582,12 @@
     }
 
     function draw() {
-      ctx.fillStyle = '#111';
+      const t = THEMES[currentTheme];
+
+      ctx.fillStyle = t.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.strokeStyle = '#1a1a1a';
+      ctx.strokeStyle = t.grid;
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
         ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
@@ -718,7 +599,7 @@
       drawParticles();
 
       const [fx, fy] = food;
-      ctx.fillStyle = '#f87171';
+      ctx.fillStyle = t.food;
       ctx.beginPath();
       ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
       ctx.fill();
@@ -726,68 +607,59 @@
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
-          ? '#4ade80'
-          : `hsl(${140 - ratio*40}, 70%, ${50 - ratio*15}%)`;
+          ? t.snake
+          : `hsl(${t.snakeHue - ratio*40}, 70%, ${50 - ratio*15}%)`;
         ctx.beginPath();
         ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
         ctx.fill();
       });
     }
 
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      if (paused) {
+        clearTimeout(loopId);
+        overlayTitle.textContent = 'PAUSED';
+        overlaySub.textContent   = 'Press P to resume';
+        btn.textContent = 'RESUME';
+        overlay.style.display = 'flex';
+      } else {
+        overlay.style.display = 'none';
+        loop();
+      }
+    }
+
     function endGame() {
-      gameRunning = false;
+      running = false; paused = false;
       clearTimeout(loopId);
-      const newIdx = saveScore(score);
-      renderScores(newIdx);
+      if (score > 0) saveScore(score);
       overlayTitle.textContent = 'GAME OVER';
-      overlaySub.textContent = `Score: ${score}`;
+      overlaySub.textContent   = `Score: ${score}`;
       btn.textContent = 'PLAY AGAIN';
       overlay.style.display = 'flex';
     }
 
-    btn.addEventListener('click', startGame);
+    btn.addEventListener('click', () => {
+      if (paused) togglePause();
+      else startGame();
+    });
 
     document.addEventListener('keydown', e => {
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        togglePause();
+        return;
+      }
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
-      if (!gameRunning || d[0] === -dir[0] && d[1] === -dir[1]) return;
+      if (d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
 
-    // ── Touch swipe on canvas ───────────────────────────────────────
-    let touchStartX = 0, touchStartY = 0;
-
-    canvas.addEventListener('touchstart', e => {
-      e.preventDefault();
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', e => {
-      e.preventDefault();
-      if (!gameRunning) return;
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      const dy = e.changedTouches[0].clientY - touchStartY;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 15) return;
-      const d = Math.abs(dx) > Math.abs(dy)
-        ? (dx > 0 ? DIRS.ArrowRight : DIRS.ArrowLeft)
-        : (dy > 0 ? DIRS.ArrowDown  : DIRS.ArrowUp);
-      if (d[0] === -dir[0] && d[1] === -dir[1]) return;
-      nextDir = d;
-    }, { passive: false });
-
-    // ── D-pad buttons ───────────────────────────────────────────────
-    function applyDir(key) {
-      const d = DIRS[key];
-      if (!gameRunning || !d || (d[0] === -dir[0] && d[1] === -dir[1])) return;
-      nextDir = d;
-    }
-
-    document.getElementById('btn-up').addEventListener('click',    () => applyDir('ArrowUp'));
-    document.getElementById('btn-down').addEventListener('click',  () => applyDir('ArrowDown'));
-    document.getElementById('btn-left').addEventListener('click',  () => applyDir('ArrowLeft'));
-    document.getElementById('btn-right').addEventListener('click', () => applyDir('ArrowRight'));
+    // Apply saved theme on load
+    applyTheme(currentTheme);
   </script>
 </body>
 </html>
