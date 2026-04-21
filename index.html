@@ -4,14 +4,207 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Snake</title>
-  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 16px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 6px;
+      color: #4ade80;
+      text-transform: uppercase;
+    }
+
+    /* ── Tabs ── */
+    #tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      padding: 6px 20px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #666;
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-btn.active {
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    .tab-btn:hover:not(.active) { color: #aaa; }
+
+    .tab-panel { display: none; flex-direction: column; align-items: center; gap: 16px; }
+    .tab-panel.active { display: flex; }
+
+    /* ── Game tab ── */
+    #scoreboard {
+      display: flex;
+      gap: 40px;
+      font-size: 0.9rem;
+      color: #aaa;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      align-items: center;
+    }
+
+    #scoreboard span { color: #fff; font-weight: bold; }
+
+    #combo-display {
+      font-size: 0.8rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      animation: comboPulse 0.3s ease;
+    }
+
+    @keyframes comboPulse {
+      0%   { transform: scale(1.6); }
+      100% { transform: scale(1); }
+    }
+
+    #canvas-wrapper { position: relative; }
+
+    canvas {
+      display: block;
+      border: 2px solid #2a2a2a;
+      border-radius: 4px;
+      background: #111;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.75);
+      border-radius: 4px;
+      gap: 12px;
+    }
+
+    #overlay h2 {
+      font-size: 1.8rem;
+      letter-spacing: 4px;
+      color: #facc15;
+    }
+
+    #overlay p { color: #aaa; font-size: 0.85rem; letter-spacing: 1px; }
+
+    #overlay button {
+      margin-top: 8px;
+      padding: 10px 32px;
+      background: #4ade80;
+      color: #000;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #overlay button:hover { background: #22c55e; }
+
+    #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
+
+    /* ── Changelog tab ── */
+    #changelog-panel { width: 404px; }
+
+    .cl-header {
+      font-size: 0.7rem;
+      color: #444;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .cl-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .cl-list::-webkit-scrollbar { width: 4px; }
+    .cl-list::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 2px; }
+    .cl-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    .cl-entry {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .cl-entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .cl-version {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #4ade80;
+      letter-spacing: 1px;
+    }
+
+    .cl-date { font-size: 0.7rem; color: #444; }
+
+    .cl-items {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cl-items li {
+      font-size: 0.8rem;
+      color: #aaa;
+      padding-left: 14px;
+      position: relative;
+    }
+
+    .cl-items li::before { content: '\2192'; position: absolute; left: 0; color: #333; }
+    .cl-items li.new::before  { color: #4ade80; }
+    .cl-items li.fix::before  { content: '\2726'; color: #facc15; }
+    .cl-items li.change::before { content: '\25C6'; color: #60a5fa; }
+
+    .cl-by { margin-top: 8px; font-size: 0.65rem; color: #333; letter-spacing: 1px; }
+  </style>
 </head>
 <body>
   <h1>Snake</h1>
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
-    <button class="tab-btn" data-tab="scores">Scores</button>
     <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
@@ -21,6 +214,7 @@
       Score: <span id="score">0</span>
       &nbsp;&nbsp;|&nbsp;&nbsp;
       Best: <span id="best">0</span>
+      &nbsp;&nbsp;<span id="combo-display" style="display:none"></span>
     </div>
 
     <div id="canvas-wrapper">
@@ -32,21 +226,364 @@
       </div>
     </div>
 
-    <div id="controls">Arrow Keys / WASD &nbsp;&middot;&nbsp; <kbd>P</kbd> or <kbd>Esc</kbd> to Pause</div>
-  </div>
-
-  <!-- Scores tab -->
-  <div id="scores-panel" class="tab-panel">
-    <p class="cl-header">Top Scores &mdash; Local Leaderboard</p>
-    <div id="scores-list"></div>
+    <div id="controls">Arrow Keys / WASD &nbsp;·&nbsp; Space / P to pause</div>
   </div>
 
   <!-- Changelog tab -->
   <div id="changelog-panel" class="tab-panel">
-    <p class="cl-header">Update history &mdash; maintained by Claude</p>
+    <p class="cl-header">Update history — maintained by Claude</p>
     <div class="cl-list" id="cl-list"></div>
   </div>
 
-  <script type="module" src="js/main.js"></script>
+  <script>
+    // ── Changelog data ──────────────────────────────────────────────
+    const CHANGELOG = [
+      {
+        version: "v1.3",
+        date: "2026-04-21 16:00",
+        items: [
+          { type: "new", text: "Táo vàng: xuất hiện ngẫu nhiên (40%), tồn tại 8 giây, trị giá +30 điểm, hiệu ứng glow nhấp nháy" },
+          { type: "new", text: "Hệ thống Combo: ăn liên tiếp trong 3.5s tăng nhân điểm 1× → 2× → 3× tối đa" },
+          { type: "new", text: "Tạm dừng: nhấn Space hoặc P để pause/resume, hiển thị màn hình PAUSED trên canvas" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+      {
+        version: "v1.2",
+        date: "2026-04-21 15:00",
+        items: [
+          { type: "new", text: "Hiệu ứng particle bùng nổ khi rắn ăn mồi" },
+          { type: "new", text: "Particles có màu sắc ngẫu nhiên, trọng lực và fade-out mượt" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+      {
+        version: "v1.1",
+        date: "2026-04-21 08:30",
+        items: [
+          { type: "new", text: "Thêm tab Changelog để theo dõi lịch sử cập nhật" },
+          { type: "new", text: "Tab Game / Changelog có thể chuyển đổi" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+      {
+        version: "v1.0",
+        date: "2026-04-21 08:00",
+        items: [
+          { type: "new", text: "Khởi tạo game Snake trên web (HTML/JS/Canvas)" },
+          { type: "new", text: "Lưu best score bằng localStorage" },
+          { type: "new", text: "Điều khiển bằng Arrow Keys hoặc WASD" },
+          { type: "new", text: "Tốc độ tăng dần theo điểm" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
+    ];
+
+    // ── Render changelog ────────────────────────────────────────────
+    const clList = document.getElementById('cl-list');
+    CHANGELOG.forEach(entry => {
+      const el = document.createElement('div');
+      el.className = 'cl-entry';
+      el.innerHTML = `
+        <div class="cl-entry-header">
+          <span class="cl-version">${entry.version}</span>
+          <span class="cl-date">${entry.date}</span>
+        </div>
+        <ul class="cl-items">
+          ${entry.items.map(i => `<li class="${i.type}">${i.text}</li>`).join('')}
+        </ul>
+        <div class="cl-by">by ${entry.by}</div>
+      `;
+      clList.appendChild(el);
+    });
+
+    // ── Tab switching ───────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab + '-panel').classList.add('active');
+      });
+    });
+
+    // ── Game constants ──────────────────────────────────────────────
+    const canvas = document.getElementById('c');
+    const ctx    = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl  = document.getElementById('best');
+    const comboEl = document.getElementById('combo-display');
+    const overlay      = document.getElementById('overlay');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlaySub   = document.getElementById('overlay-sub');
+    const btn          = document.getElementById('btn');
+
+    const CELL = 20;
+    const COLS = canvas.width  / CELL;
+    const ROWS = canvas.height / CELL;
+
+    const DIRS = {
+      ArrowUp:    [0, -1], w: [0, -1],
+      ArrowDown:  [0,  1], s: [0,  1],
+      ArrowLeft:  [-1, 0], a: [-1,  0],
+      ArrowRight: [1,  0], d: [1,   0],
+    };
+
+    const GOLDEN_DURATION = 8000;
+    const COMBO_WINDOW    = 3500;
+
+    // ── Game state ──────────────────────────────────────────────────
+    let snake, dir, nextDir, food, score, best, loopId, speed, particles;
+    let goldenFood = null, goldenFoodId = null, goldenSpawnTime = 0;
+    let paused = false, running = false;
+    let combo = 1, lastEatMs = 0;
+
+    best = parseInt(localStorage.getItem('snake_best') || '0');
+    bestEl.textContent = best;
+
+    // ── Helpers ─────────────────────────────────────────────────────
+    function randFood(exclude) {
+      let pos;
+      do {
+        pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
+      } while (exclude.some(s => s[0] === pos[0] && s[1] === pos[1]));
+      return pos;
+    }
+
+    function updateBest() {
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+        localStorage.setItem('snake_best', best);
+      }
+    }
+
+    // ── Combo display ────────────────────────────────────────────────
+    function updateComboDisplay() {
+      if (combo > 1) {
+        comboEl.textContent = combo + '× COMBO';
+        comboEl.style.display = 'inline';
+        comboEl.style.color = combo >= 3 ? '#f87171' : '#facc15';
+        comboEl.style.animation = 'none';
+        void comboEl.offsetWidth;
+        comboEl.style.animation = 'comboPulse 0.3s ease';
+      } else {
+        comboEl.style.display = 'none';
+      }
+    }
+
+    // ── Golden food ──────────────────────────────────────────────────
+    function maybeSpawnGolden() {
+      if (goldenFood || Math.random() > 0.4) return;
+      goldenFood = randFood([...snake, food]);
+      goldenSpawnTime = Date.now();
+      clearTimeout(goldenFoodId);
+      goldenFoodId = setTimeout(() => { goldenFood = null; }, GOLDEN_DURATION);
+    }
+
+    // ── Particle system ──────────────────────────────────────────────
+    function spawnParticles(gx, gy, hueMin, hueRange) {
+      hueMin   = hueMin   ?? 10;
+      hueRange = hueRange ?? 60;
+      const cx = gx * CELL + CELL / 2;
+      const cy = gy * CELL + CELL / 2;
+      for (let i = 0; i < 14; i++) {
+        const angle = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.6;
+        const spd   = 1.8 + Math.random() * 2.8;
+        particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: 1,
+          hue: hueMin + Math.random() * hueRange,
+        });
+      }
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => {
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.12; p.vx *= 0.96;
+        p.life -= 0.035;
+        return p.life > 0;
+      });
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.globalAlpha = p.life * p.life;
+        ctx.fillStyle = `hsl(${p.hue}, 90%, 62%)`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    // ── Game loop ────────────────────────────────────────────────────
+    function startGame() {
+      snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
+      dir = [1, 0]; nextDir = [1, 0];
+      food = randFood(snake);
+      score = 0; speed = 120; particles = [];
+      goldenFood = null; clearTimeout(goldenFoodId);
+      paused = false; running = true;
+      combo = 1; lastEatMs = 0;
+      scoreEl.textContent = 0;
+      updateComboDisplay();
+      overlay.style.display = 'none';
+      if (loopId) clearTimeout(loopId);
+      loop();
+    }
+
+    function loop() {
+      if (!running || paused) return;
+      update();
+      draw();
+      loopId = setTimeout(loop, speed);
+    }
+
+    function update() {
+      dir = nextDir;
+      const head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+
+      if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+      if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
+
+      snake.unshift(head);
+
+      if (goldenFood && head[0] === goldenFood[0] && head[1] === goldenFood[1]) {
+        // Eat golden: bonus points, no growth
+        score += 30;
+        scoreEl.textContent = score;
+        updateBest();
+        spawnParticles(goldenFood[0], goldenFood[1], 40, 20);
+        clearTimeout(goldenFoodId);
+        goldenFood = null;
+        snake.pop();
+      } else if (head[0] === food[0] && head[1] === food[1]) {
+        // Eat regular food: combo + grow
+        const now = Date.now();
+        combo = (lastEatMs > 0 && now - lastEatMs < COMBO_WINDOW) ? Math.min(3, combo + 1) : 1;
+        lastEatMs = now;
+        score += 10 * combo;
+        scoreEl.textContent = score;
+        updateBest();
+        updateComboDisplay();
+        spawnParticles(food[0], food[1]);
+        food = randFood(snake);
+        speed = Math.max(60, speed - 2);
+        maybeSpawnGolden();
+      } else {
+        snake.pop();
+      }
+
+      updateParticles();
+    }
+
+    function draw() {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grid
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
+      }
+      for (let y = 0; y <= ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
+      }
+
+      drawParticles();
+
+      // Regular food
+      const [fx, fy] = food;
+      ctx.fillStyle = '#f87171';
+      ctx.beginPath();
+      ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Golden food
+      if (goldenFood) {
+        const [gx, gy] = goldenFood;
+        const t = Date.now();
+        const pulse    = Math.sin(t / 150) * 2.5;
+        const timeLeft = 1 - (t - goldenSpawnTime) / GOLDEN_DURATION;
+        ctx.save();
+        ctx.shadowBlur  = 18;
+        ctx.shadowColor = '#facc15';
+        ctx.globalAlpha = Math.max(0.35, timeLeft);
+        ctx.fillStyle   = '#facc15';
+        ctx.beginPath();
+        ctx.arc(gx * CELL + CELL / 2, gy * CELL + CELL / 2, CELL / 2 - 1 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+
+      // Snake
+      snake.forEach(([x, y], i) => {
+        const ratio = i / snake.length;
+        ctx.fillStyle = i === 0
+          ? '#4ade80'
+          : `hsl(${140 - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
+        ctx.beginPath();
+        ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
+        ctx.fill();
+      });
+
+      if (paused) {
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 2rem \'Segoe UI\', sans-serif';
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 16);
+        ctx.fillStyle = '#666';
+        ctx.font = '0.72rem \'Segoe UI\', sans-serif';
+        ctx.fillText('Press SPACE or P to continue', canvas.width / 2, canvas.height / 2 + 20);
+        ctx.textBaseline = 'alphabetic';
+      }
+    }
+
+    function endGame() {
+      clearTimeout(loopId);
+      clearTimeout(goldenFoodId);
+      running = false;
+      goldenFood = null;
+      combo = 1;
+      updateComboDisplay();
+      overlayTitle.textContent = 'GAME OVER';
+      overlaySub.textContent   = `Score: ${score}`;
+      btn.textContent = 'PLAY AGAIN';
+      overlay.style.display = 'flex';
+    }
+
+    btn.addEventListener('click', startGame);
+
+    document.addEventListener('keydown', e => {
+      // Pause toggle
+      if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        if (!running) return;
+        paused = !paused;
+        if (!paused) {
+          loop();
+        } else {
+          clearTimeout(loopId);
+          draw();
+        }
+        return;
+      }
+
+      const d = DIRS[e.key];
+      if (!d) return;
+      e.preventDefault();
+      if (d[0] === -dir[0] && d[1] === -dir[1]) return;
+      nextDir = d;
+    });
+  </script>
 </body>
 </html>
