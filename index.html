@@ -118,6 +118,39 @@
 
     #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 
+    /* ── D-pad ── */
+    #dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 4px;
+    }
+
+    #dpad button {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      color: #aaa;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s, transform 0.08s;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dpad button:active {
+      background: #4ade80;
+      color: #000;
+      transform: scale(0.92);
+    }
+
+    #dpad .dpad-empty {
+      background: transparent;
+      border: none;
+      pointer-events: none;
+    }
+
     /* ── Changelog tab ── */
     #changelog-panel {
       width: 404px;
@@ -228,7 +261,19 @@
       </div>
     </div>
 
-    <div id="controls">Arrow Keys / WASD to move</div>
+    <div id="controls">Arrow Keys / WASD · Swipe on canvas · D-pad below</div>
+
+    <div id="dpad">
+      <div class="dpad-empty"></div>
+      <button id="btn-up" aria-label="Up">▲</button>
+      <div class="dpad-empty"></div>
+      <button id="btn-left" aria-label="Left">◀</button>
+      <div class="dpad-empty"></div>
+      <button id="btn-right" aria-label="Right">▶</button>
+      <div class="dpad-empty"></div>
+      <button id="btn-down" aria-label="Down">▼</button>
+      <div class="dpad-empty"></div>
+    </div>
   </div>
 
   <!-- Changelog tab -->
@@ -241,6 +286,15 @@
     // ── Changelog data ──────────────────────────────────────────────
     // Claude updates this array each time a new feature is shipped.
     const CHANGELOG = [
+      {
+        version: "v1.3",
+        date: "2026-04-21 15:21",
+        items: [
+          { type: "new", text: "Mobile touch controls: vuốt trên canvas để đổi hướng" },
+          { type: "new", text: "On-screen D-pad (4 nút mũi tên) hoạt động trên mọi thiết bị" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
       {
         version: "v1.2",
         date: "2026-04-21 15:00",
@@ -472,6 +526,39 @@
       if (d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
+
+    // ── Touch swipe on canvas ───────────────────────────────────────
+    let touchStartX = 0, touchStartY = 0;
+
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 15) return;
+      const d = Math.abs(dx) > Math.abs(dy)
+        ? (dx > 0 ? DIRS.ArrowRight : DIRS.ArrowLeft)
+        : (dy > 0 ? DIRS.ArrowDown  : DIRS.ArrowUp);
+      if (d[0] === -dir[0] && d[1] === -dir[1]) return;
+      nextDir = d;
+    }, { passive: false });
+
+    // ── D-pad buttons ───────────────────────────────────────────────
+    function applyDir(key) {
+      const d = DIRS[key];
+      if (!d || (d[0] === -dir[0] && d[1] === -dir[1])) return;
+      nextDir = d;
+    }
+
+    document.getElementById('btn-up').addEventListener('click',    () => applyDir('ArrowUp'));
+    document.getElementById('btn-down').addEventListener('click',  () => applyDir('ArrowDown'));
+    document.getElementById('btn-left').addEventListener('click',  () => applyDir('ArrowLeft'));
+    document.getElementById('btn-right').addEventListener('click', () => applyDir('ArrowRight'));
   </script>
 </body>
 </html>
