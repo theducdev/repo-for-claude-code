@@ -1,6 +1,16 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.5",
+    date: "2026-04-21 17:30",
+    items: [
+      { type: "new", text: "Chọn độ khó Easy / Normal / Hard trước khi chơi (tốc độ ban đầu & tốc độ tăng khác nhau)" },
+      { type: "new", text: "Screen shake khi rắn chết — canvas rung 400ms trước khi hiện Game Over" },
+      { type: "new", text: "Combo system: ăn mồi liên tiếp trong 3 giây → điểm thưởng tăng dần + chữ COMBO xuất hiện trên canvas" },
+    ],
+    by: "Claude (claude-sonnet-4-6)",
+  },
+  {
     version: "v1.4",
     date: "2026-04-21 17:00",
     items: [
