@@ -5,14 +5,16 @@ export function resetParticles() {
   particles = [];
 }
 
-export function spawnParticles(gx, gy, cellSize) {
+export function spawnParticles(gx, gy, cellSize, hueOverride = null) {
   const cx = gx * cellSize + cellSize / 2;
   const cy = gy * cellSize + cellSize / 2;
   const count = 14;
   for (let i = 0; i < count; i++) {
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
     const spd = 1.8 + Math.random() * 2.8;
-    const hue = Math.random() * 60 + 10;
+    const hue = hueOverride !== null
+      ? hueOverride + (Math.random() - 0.5) * 30
+      : Math.random() * 60 + 10;
     particles.push({
       x: cx, y: cy,
       vx: Math.cos(angle) * spd,
