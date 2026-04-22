@@ -89,7 +89,7 @@
       justify-content: center;
       background: rgba(0,0,0,0.75);
       border-radius: 4px;
-      gap: 10px;
+      gap: 12px;
     }
 
     #overlay h2 {
@@ -101,7 +101,7 @@
     #overlay p { color: #aaa; font-size: 0.85rem; letter-spacing: 1px; }
 
     #overlay button {
-      margin-top: 6px;
+      margin-top: 8px;
       padding: 10px 32px;
       background: #4ade80;
       color: #000;
@@ -116,105 +116,47 @@
 
     #overlay button:hover { background: #22c55e; }
 
-    #overlay-rank {
-      font-size: 0.8rem;
-      color: #facc15;
+    /* ── HUD below canvas ── */
+    #game-hud {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-height: 24px;
+    }
+
+    #combo-display {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #fb923c;
+      letter-spacing: 2px;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    #wrap-toggle {
+      padding: 4px 14px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #555;
+      font-size: 0.7rem;
+      font-weight: bold;
       letter-spacing: 1px;
-      min-height: 1.2em;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    #wrap-toggle.on {
+      border-color: #4ade80;
+      color: #4ade80;
     }
 
     #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 
-    /* ── Mode bar ── */
-    #mode-bar {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .mode-btn {
-      padding: 5px 14px;
-      border: 1px solid #2a2a2a;
-      border-radius: 20px;
-      background: transparent;
-      color: #555;
-      font-size: 0.7rem;
-      font-weight: bold;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.2s;
-      user-select: none;
-    }
-
-    .mode-btn.on {
-      border-color: #4ade80;
-      color: #4ade80;
-      background: rgba(74, 222, 128, 0.08);
-      box-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
-    }
-
-    .theme-btn { border-radius: 20px; }
-    .theme-btn.active { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); }
-
-    /* ── Scores tab ── */
-    #scores-panel { width: 404px; }
-
-    .score-header {
-      font-size: 0.7rem;
-      color: #444;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 12px;
-    }
-
-    .score-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      width: 100%;
-    }
-
-    .score-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #141414;
-      border: 1px solid #222;
-      border-radius: 6px;
-      padding: 10px 14px;
-    }
-
-    .score-rank {
-      font-size: 1rem;
-      font-weight: bold;
-      color: #333;
-      width: 24px;
-      text-align: center;
-    }
-
-    .score-row:nth-child(1) .score-rank { color: #fbbf24; }
-    .score-row:nth-child(2) .score-rank { color: #9ca3af; }
-    .score-row:nth-child(3) .score-rank { color: #cd7c2f; }
-
-    .score-val {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #fff;
-      flex: 1;
-    }
-
-    .score-empty {
-      font-size: 0.8rem;
-      color: #333;
-      letter-spacing: 1px;
-      text-align: center;
-      padding: 24px 0;
-    }
-
     /* ── Changelog tab ── */
-    #changelog-panel { width: 404px; }
+    #changelog-panel {
+      width: 404px;
+    }
 
     .cl-header {
       font-size: 0.7rem;
@@ -258,7 +200,10 @@
       letter-spacing: 1px;
     }
 
-    .cl-date { font-size: 0.7rem; color: #444; }
+    .cl-date {
+      font-size: 0.7rem;
+      color: #444;
+    }
 
     .cl-items {
       list-style: none;
@@ -274,12 +219,23 @@
       position: relative;
     }
 
-    .cl-items li::before { content: '\2192'; position: absolute; left: 0; color: #333; }
+    .cl-items li::before {
+      content: '\2192';
+      position: absolute;
+      left: 0;
+      color: #333;
+    }
+
     .cl-items li.new::before { color: #4ade80; }
-    .cl-items li.fix::before { content: '\2726'; color: #facc15; }
+    .cl-items li.fix::before { content: '\2736'; color: #facc15; }
     .cl-items li.change::before { content: '\25C6'; color: #60a5fa; }
 
-    .cl-by { margin-top: 8px; font-size: 0.65rem; color: #333; letter-spacing: 1px; }
+    .cl-by {
+      margin-top: 8px;
+      font-size: 0.65rem;
+      color: #333;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -287,7 +243,6 @@
 
   <div id="tabs">
     <button class="tab-btn active" data-tab="game">Game</button>
-    <button class="tab-btn" data-tab="scores">Scores</button>
     <button class="tab-btn" data-tab="changelog">Changelog</button>
   </div>
 
@@ -304,25 +259,16 @@
       <div id="overlay">
         <h2 id="overlay-title">SNAKE</h2>
         <p id="overlay-sub">Use Arrow Keys or WASD</p>
-        <div id="overlay-rank"></div>
         <button id="btn">PLAY</button>
       </div>
     </div>
 
-    <div id="mode-bar">
-      <button class="mode-btn" id="wrap-btn">&#x27F3; Wrap</button>
-      <button class="mode-btn theme-btn active" data-theme="classic">Classic</button>
-      <button class="mode-btn theme-btn" data-theme="neon">Neon</button>
-      <button class="mode-btn theme-btn" data-theme="ocean">Ocean</button>
+    <div id="game-hud">
+      <span id="combo-display"></span>
+      <button id="wrap-toggle" class="on">WRAP: ON</button>
     </div>
 
-    <div id="controls">Arrow Keys / WASD &nbsp;·&nbsp; Space / P = pause &nbsp;·&nbsp; Gold = +50 pts</div>
-  </div>
-
-  <!-- Scores tab -->
-  <div id="scores-panel" class="tab-panel">
-    <p class="score-header">Top scores — stored locally</p>
-    <div class="score-list" id="score-list"></div>
+    <div id="controls">Arrow Keys / WASD &nbsp;&middot;&nbsp; T = Toggle Wrap</div>
   </div>
 
   <!-- Changelog tab -->
@@ -332,25 +278,15 @@
   </div>
 
   <script>
-    // ── Changelog data ──────────────────────────────────────────────
+    // ── Changelog ──────────────────────────────────────────────────
     const CHANGELOG = [
       {
-        version: "v1.4",
-        date: "2026-04-21 18:00",
-        items: [
-          { type: "new", text: "Pause: nhấn Space hoặc P để tạm dừng/tiếp tục" },
-          { type: "new", text: "High Score Board: lưu top 5 điểm cao nhất, có tab riêng" },
-          { type: "new", text: "Color Themes: Classic / Neon / Ocean — đổi màu toàn bộ game" },
-        ],
-        by: "Claude (claude-sonnet-4-6)",
-      },
-      {
         version: "v1.3",
-        date: "2026-04-21 15:30",
+        date: "2026-04-22 15:00",
         items: [
-          { type: "new", text: "Wrap mode: bật để rắn xuyên tường, xuất hiện phía bên kia" },
-          { type: "new", text: "Power-up vàng xuất hiện ngẫu nhiên sau khi ăn mồi, ăn được +50 điểm" },
-          { type: "new", text: "Combo streak: ăn mồi liên tiếp trong 3.5s được nhân điểm 2x → 3x" },
+          { type: "new", text: "Wall wrap-around: rắn xuyên tường thay vì chết, toggle bằng T hoặc nút WRAP" },
+          { type: "new", text: "Power-up food (sao vàng): xuất hiện định kỳ, +30 điểm và giảm tốc 50 tick" },
+          { type: "new", text: "Combo multiplier: ăn liên tiếp nhanh tăng hệ số x2 → x3 → x4" },
         ],
         by: "Claude (claude-sonnet-4-6)",
       },
@@ -385,7 +321,6 @@
       },
     ];
 
-    // ── Render changelog ────────────────────────────────────────────
     const clList = document.getElementById('cl-list');
     CHANGELOG.forEach(entry => {
       const el = document.createElement('div');
@@ -410,77 +345,6 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById(btn.dataset.tab + '-panel').classList.add('active');
-        if (btn.dataset.tab === 'scores') renderScores();
-      });
-    });
-
-    // ── High Score Board ─────────────────────────────────────────────
-    const MAX_BOARD = 5;
-    const MEDALS = ['🥇', '🥈', '🥉', '4', '5'];
-
-    function loadScores() {
-      try { return JSON.parse(localStorage.getItem('snake_scores') || '[]'); }
-      catch { return []; }
-    }
-
-    function saveScoreBoard(s) {
-      if (s <= 0) return null;
-      const scores = loadScores();
-      scores.push(s);
-      scores.sort((a, b) => b - a);
-      const trimmed = scores.slice(0, MAX_BOARD);
-      localStorage.setItem('snake_scores', JSON.stringify(trimmed));
-      return trimmed.indexOf(s) + 1;
-    }
-
-    function renderScores() {
-      const list = document.getElementById('score-list');
-      const scores = loadScores();
-      if (scores.length === 0) {
-        list.innerHTML = '<div class="score-empty">No scores yet — play a game!</div>';
-        return;
-      }
-      list.innerHTML = scores.map((s, i) => `
-        <div class="score-row">
-          <span class="score-rank">${MEDALS[i]}</span>
-          <span class="score-val">${s}</span>
-        </div>
-      `).join('');
-    }
-
-    // ── Color themes ─────────────────────────────────────────────────
-    const THEMES = {
-      classic: {
-        bg: '#111', grid: '#1a1a1a', border: 'rgba(74,222,128,0.2)',
-        foodColor: '#f87171',
-        snakeHead: '#4ade80', snakeHue: 140,
-        wrapGlow: 'rgba(74,222,128,0.2)',
-        comboColor: '#facc15', comboMaxColor: '#f59e0b',
-      },
-      neon: {
-        bg: '#080c14', grid: '#0d1525', border: 'rgba(34,211,238,0.25)',
-        foodColor: '#f472b6',
-        snakeHead: '#22d3ee', snakeHue: 195,
-        wrapGlow: 'rgba(34,211,238,0.25)',
-        comboColor: '#a78bfa', comboMaxColor: '#7c3aed',
-      },
-      ocean: {
-        bg: '#08111c', grid: '#0e1c2a', border: 'rgba(96,165,250,0.25)',
-        foodColor: '#34d399',
-        snakeHead: '#60a5fa', snakeHue: 220,
-        wrapGlow: 'rgba(96,165,250,0.25)',
-        comboColor: '#6ee7b7', comboMaxColor: '#059669',
-      },
-    };
-
-    let currentTheme = 'classic';
-
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTheme = btn.dataset.theme;
-        document.querySelector('canvas').style.background = THEMES[currentTheme].bg;
       });
     });
 
@@ -492,17 +356,13 @@
     const overlay = document.getElementById('overlay');
     const overlayTitle = document.getElementById('overlay-title');
     const overlaySub = document.getElementById('overlay-sub');
-    const overlayRank = document.getElementById('overlay-rank');
     const btn = document.getElementById('btn');
-    const wrapBtn = document.getElementById('wrap-btn');
+    const comboDisplay = document.getElementById('combo-display');
+    const wrapBtn = document.getElementById('wrap-toggle');
 
     const CELL = 20;
     const COLS = canvas.width / CELL;
     const ROWS = canvas.height / CELL;
-    const COMBO_WINDOW = 3500;
-    const MAX_COMBO = 3;
-    const POWERUP_DURATION = 6000;
-    const POWERUP_CHANCE = 0.30;
 
     const DIRS = {
       ArrowUp:    [0, -1], w: [0, -1],
@@ -512,72 +372,53 @@
     };
 
     let snake, dir, nextDir, food, score, best, loopId, speed, particles;
-    let powerup, powerupTimeout;
-    let combo, lastFoodTime;
-    let wrapMode = false;
-    let paused = false;
-    let puPulse = 0;
+    let powerUp, powerUpCooldown;
+    let slowBonus, slowTimer;
+    let comboCount, comboTimer;
+    let wrapMode = true;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
 
-    // ── Wrap mode toggle ─────────────────────────────────────────────
-    wrapBtn.addEventListener('click', () => {
-      wrapMode = !wrapMode;
-      wrapBtn.classList.toggle('on', wrapMode);
-    });
+    // ── Wrap toggle ─────────────────────────────────────────────────
+    function setWrap(val) {
+      wrapMode = val;
+      wrapBtn.textContent = `WRAP: ${wrapMode ? 'ON' : 'OFF'}`;
+      if (wrapMode) wrapBtn.classList.add('on');
+      else wrapBtn.classList.remove('on');
+    }
+    wrapBtn.addEventListener('click', () => setWrap(!wrapMode));
 
-    // ── Helpers ──────────────────────────────────────────────────────
-    function randFood(sn) {
+    // ── Helpers ─────────────────────────────────────────────────────
+    function randCell(exclude) {
       let pos;
       do {
         pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (
-        sn.some(s => s[0] === pos[0] && s[1] === pos[1]) ||
-        (powerup && pos[0] === powerup[0] && pos[1] === powerup[1])
-      );
+      } while (exclude.some(([ex, ey]) => ex === pos[0] && ey === pos[1]));
       return pos;
     }
 
-    function maybeSpawnPowerup() {
-      if (powerup || Math.random() > POWERUP_CHANCE) return;
-      let pos;
-      do {
-        pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (
-        snake.some(s => s[0] === pos[0] && s[1] === pos[1]) ||
-        (pos[0] === food[0] && pos[1] === food[1])
-      );
-      powerup = pos;
-      powerupTimeout = setTimeout(() => { powerup = null; }, POWERUP_DURATION);
-    }
-
-    // ── Particle system ───────────────────────────────────────────────
-    function spawnParticles(gx, gy, golden) {
+    // ── Particle system ─────────────────────────────────────────────
+    function spawnParticles(gx, gy) {
       const cx = gx * CELL + CELL / 2;
       const cy = gy * CELL + CELL / 2;
-      const count = golden ? 22 : 14;
-      for (let i = 0; i < count; i++) {
-        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-        const spd = (golden ? 2.8 : 1.8) + Math.random() * 2.8;
-        const hue = golden ? 35 + Math.random() * 25 : Math.random() * 60 + 10;
+      for (let i = 0; i < 14; i++) {
+        const angle = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.6;
+        const spd = 1.8 + Math.random() * 2.8;
         particles.push({
           x: cx, y: cy,
           vx: Math.cos(angle) * spd,
           vy: Math.sin(angle) * spd,
           life: 1,
-          hue,
-          r: golden ? 4.5 : 3.5,
+          hue: Math.random() * 60 + 10,
         });
       }
     }
 
     function updateParticles() {
       particles = particles.filter(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.12;
-        p.vx *= 0.96;
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.12; p.vx *= 0.96;
         p.life -= 0.035;
         return p.life > 0;
       });
@@ -588,50 +429,25 @@
         ctx.globalAlpha = p.life * p.life;
         ctx.fillStyle = `hsl(${p.hue}, 90%, 62%)`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 3.5 * p.life, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.globalAlpha = 1;
     }
 
-    // ── Pause ────────────────────────────────────────────────────────
-    function togglePause() {
-      paused = !paused;
-      if (paused) {
-        clearTimeout(loopId);
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 28px "Segoe UI", sans-serif';
-        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 14);
-        ctx.fillStyle = '#555';
-        ctx.font = '13px "Segoe UI", sans-serif';
-        ctx.fillText('Press Space or P to resume', canvas.width / 2, canvas.height / 2 + 14);
-        ctx.textBaseline = 'alphabetic';
-      } else {
-        loop();
-      }
-    }
-
-    // ── Game lifecycle ────────────────────────────────────────────────
+    // ── Game init ───────────────────────────────────────────────────
     function startGame() {
       snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
-      dir = [1, 0];
-      nextDir = [1, 0];
-      powerup = null;
-      clearTimeout(powerupTimeout);
-      food = randFood(snake);
-      score = 0;
-      speed = 120;
+      dir = [1, 0]; nextDir = [1, 0];
+      food = randCell(snake);
+      score = 0; speed = 120;
       particles = [];
-      combo = 1;
-      lastFoodTime = 0;
-      paused = false;
+      powerUp = null; powerUpCooldown = 100;
+      slowBonus = 0; slowTimer = 0;
+      comboCount = 0; comboTimer = 0;
       scoreEl.textContent = 0;
+      comboDisplay.textContent = '';
       overlay.style.display = 'none';
-      overlayRank.textContent = '';
       if (loopId) clearTimeout(loopId);
       loop();
     }
@@ -639,69 +455,107 @@
     function loop() {
       update();
       draw();
-      loopId = setTimeout(loop, speed);
+      loopId = setTimeout(loop, speed + slowBonus);
     }
 
+    // ── Update ──────────────────────────────────────────────────────
     function update() {
       dir = nextDir;
-      let head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+      let hx = snake[0][0] + dir[0];
+      let hy = snake[0][1] + dir[1];
 
       if (wrapMode) {
-        head[0] = (head[0] + COLS) % COLS;
-        head[1] = (head[1] + ROWS) % ROWS;
+        hx = ((hx % COLS) + COLS) % COLS;
+        hy = ((hy % ROWS) + ROWS) % ROWS;
       } else {
-        if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+        if (hx < 0 || hx >= COLS || hy < 0 || hy >= ROWS) return endGame();
       }
 
-      if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
+      if (snake.some(([sx, sy]) => sx === hx && sy === hy)) return endGame();
 
+      const head = [hx, hy];
       snake.unshift(head);
 
+      // Slow effect countdown
+      if (slowTimer > 0) {
+        slowTimer--;
+        if (slowTimer === 0) slowBonus = 0;
+      }
+
+      // Combo timer countdown
+      if (comboTimer > 0) {
+        comboTimer--;
+        if (comboTimer === 0) comboCount = 0;
+      }
+
+      let ate = false;
+
+      // Power-up collision (checked before life countdown to avoid off-by-one)
+      if (powerUp && head[0] === powerUp.x && head[1] === powerUp.y) {
+        ate = true;
+        score += 30;
+        scoreEl.textContent = score;
+        if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('snake_best', best); }
+        spawnParticles(powerUp.x, powerUp.y);
+        powerUp = null;
+        powerUpCooldown = 120;
+        slowBonus = 70;
+        slowTimer = 50;
+      }
+
+      // Regular food collision
       if (head[0] === food[0] && head[1] === food[1]) {
-        const now = Date.now();
-        if (lastFoodTime > 0 && now - lastFoodTime < COMBO_WINDOW) {
-          combo = Math.min(combo + 1, MAX_COMBO);
-        } else {
-          combo = 1;
-        }
-        lastFoodTime = now;
-        score += 10 * combo;
+        ate = true;
+        const mult = Math.min(comboCount + 1, 4);
+        comboCount = Math.min(comboCount + 1, 3);
+        comboTimer = 22;
+        score += 10 * mult;
         scoreEl.textContent = score;
-        if (score > best) {
-          best = score;
-          bestEl.textContent = best;
-          localStorage.setItem('snake_best', best);
-        }
-        spawnParticles(food[0], food[1], false);
-        food = randFood(snake);
+        if (score > best) { best = score; bestEl.textContent = best; localStorage.setItem('snake_best', best); }
+        spawnParticles(food[0], food[1]);
+        food = randCell([...snake, ...(powerUp ? [[powerUp.x, powerUp.y]] : [])]);
         speed = Math.max(60, speed - 2);
-        maybeSpawnPowerup();
-      } else if (powerup && head[0] === powerup[0] && head[1] === powerup[1]) {
-        snake.pop();
-        clearTimeout(powerupTimeout);
-        powerup = null;
-        score += 50;
-        scoreEl.textContent = score;
-        if (score > best) {
-          best = score;
-          bestEl.textContent = best;
-          localStorage.setItem('snake_best', best);
+      }
+
+      if (!ate) snake.pop();
+
+      // Power-up life management
+      if (powerUp) {
+        powerUp.life--;
+        if (powerUp.life <= 0) {
+          powerUp = null;
+          powerUpCooldown = 120;
         }
-        spawnParticles(head[0], head[1], true);
+      } else if (powerUpCooldown > 0) {
+        powerUpCooldown--;
       } else {
-        snake.pop();
+        const p = randCell([...snake, food]);
+        powerUp = { x: p[0], y: p[1], life: 80 };
       }
 
       updateParticles();
+
+      // Combo HUD
+      if (comboCount >= 1 && comboTimer > 0) {
+        comboDisplay.textContent = `COMBO x${Math.min(comboCount + 1, 4)}`;
+      } else {
+        comboDisplay.textContent = '';
+      }
     }
 
+    // ── Draw ────────────────────────────────────────────────────────
     function draw() {
-      const t = THEMES[currentTheme];
-      ctx.fillStyle = t.bg;
+      ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Subtle blue tint when slow effect is active
+      if (slowTimer > 0) {
+        ctx.fillStyle = 'rgba(96, 165, 250, 0.07)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
       // Grid
-      ctx.strokeStyle = t.grid;
+      ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
         ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
@@ -710,77 +564,60 @@
         ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
       }
 
-      // Wrap mode border glow
-      if (wrapMode) {
-        ctx.strokeStyle = t.wrapGlow;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-      }
-
       drawParticles();
 
-      // Food
+      // Regular food
       const [fx, fy] = food;
-      ctx.fillStyle = t.foodColor;
+      ctx.fillStyle = '#f87171';
       ctx.beginPath();
       ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Power-up (pulsing gold)
-      if (powerup) {
-        puPulse += 0.15;
-        const pr = CELL / 2 - 1 + Math.sin(puPulse) * 2;
-        const [px, py] = powerup;
-        const cx = px * CELL + CELL / 2;
-        const cy = py * CELL + CELL / 2;
-        ctx.shadowColor = '#fbbf24';
-        ctx.shadowBlur = 14;
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, pr);
-        grad.addColorStop(0, '#fffbeb');
-        grad.addColorStop(1, '#f59e0b');
-        ctx.fillStyle = grad;
+      // Power-up (rotating 4-pointed star)
+      if (powerUp) {
+        const cx = powerUp.x * CELL + CELL / 2;
+        const cy = powerUp.y * CELL + CELL / 2;
+        const t = Date.now() / 400;
+        const r = CELL / 2 - 1 + Math.sin(t * 3) * 1.5;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(t * 0.8);
+        ctx.globalAlpha = 0.5 + 0.5 * (powerUp.life / 80);
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 10 + Math.sin(t * 3) * 4;
+        ctx.fillStyle = '#facc15';
         ctx.beginPath();
-        ctx.arc(cx, cy, pr, 0, Math.PI * 2);
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI) / 4;
+          const len = i % 2 === 0 ? r : r * 0.42;
+          if (i === 0) ctx.moveTo(Math.cos(angle) * len, Math.sin(angle) * len);
+          else ctx.lineTo(Math.cos(angle) * len, Math.sin(angle) * len);
+        }
+        ctx.closePath();
         ctx.fill();
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+        ctx.restore();
       }
 
       // Snake
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
-          ? t.snakeHead
-          : `hsl(${t.snakeHue - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
+          ? '#4ade80'
+          : `hsl(${140 - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
         ctx.beginPath();
         ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
         ctx.fill();
       });
-
-      // Combo HUD
-      if (combo > 1 && lastFoodTime > 0) {
-        const age = Date.now() - lastFoodTime;
-        if (age < COMBO_WINDOW) {
-          const alpha = Math.max(0, 1 - age / COMBO_WINDOW);
-          ctx.globalAlpha = alpha;
-          ctx.font = 'bold 13px "Segoe UI", sans-serif';
-          ctx.textAlign = 'right';
-          ctx.fillStyle = combo === MAX_COMBO ? t.comboMaxColor : t.comboColor;
-          ctx.fillText(`${combo}× COMBO`, canvas.width - 8, 20);
-          ctx.globalAlpha = 1;
-        }
-      }
-      ctx.textAlign = 'left';
     }
 
     function endGame() {
       clearTimeout(loopId);
-      clearTimeout(powerupTimeout);
-      powerup = null;
-      paused = false;
-      const rank = saveScoreBoard(score);
+      comboDisplay.textContent = '';
       overlayTitle.textContent = 'GAME OVER';
       overlaySub.textContent = `Score: ${score}`;
-      overlayRank.textContent = rank ? `You ranked #${rank} on the board!` : '';
       btn.textContent = 'PLAY AGAIN';
       overlay.style.display = 'flex';
     }
@@ -788,17 +625,10 @@
     btn.addEventListener('click', startGame);
 
     document.addEventListener('keydown', e => {
-      if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
-        if (overlay.style.display === 'none') {
-          e.preventDefault();
-          togglePause();
-        }
-        return;
-      }
+      if (e.key === 't' || e.key === 'T') { setWrap(!wrapMode); return; }
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
-      if (paused) return;
       if (d[0] === -dir[0] && d[1] === -dir[1]) return;
       nextDir = d;
     });
