@@ -71,6 +71,23 @@
 
     #scoreboard span { color: #fff; font-weight: bold; }
 
+    #multiplier-badge {
+      display: none;
+      padding: 2px 8px;
+      background: #facc15;
+      color: #000;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      animation: pulse-badge 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse-badge {
+      from { opacity: 0.8; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.08); }
+    }
+
     #canvas-wrapper { position: relative; }
 
     canvas {
@@ -116,7 +133,35 @@
 
     #overlay button:hover { background: #22c55e; }
 
+    #bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 404px;
+      gap: 8px;
+    }
+
     #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
+
+    #wrap-toggle {
+      padding: 4px 12px;
+      background: #1a1a1a;
+      color: #555;
+      border: 1px solid #333;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    #wrap-toggle.on {
+      color: #4ade80;
+      border-color: #4ade80;
+      background: rgba(74, 222, 128, 0.08);
+    }
 
     /* ── Changelog tab ── */
     #changelog-panel {
@@ -217,6 +262,8 @@
       Score: <span id="score">0</span>
       &nbsp;&nbsp;|&nbsp;&nbsp;
       Best: <span id="best">0</span>
+      &nbsp;&nbsp;
+      <span id="multiplier-badge">2× BONUS</span>
     </div>
 
     <div id="canvas-wrapper">
@@ -228,7 +275,10 @@
       </div>
     </div>
 
-    <div id="controls">Arrow Keys / WASD to move</div>
+    <div id="bottom-bar">
+      <div id="controls">Arrow Keys / WASD · P = Pause</div>
+      <button id="wrap-toggle">WRAP: OFF</button>
+    </div>
   </div>
 
   <!-- Changelog tab -->
@@ -239,8 +289,17 @@
 
   <script>
     // ── Changelog data ──────────────────────────────────────────────
-    // Claude updates this array each time a new feature is shipped.
     const CHANGELOG = [
+      {
+        version: "v1.3",
+        date: "2026-04-22 14:00",
+        items: [
+          { type: "new", text: "Pause/Resume — nhấn P để tạm dừng và tiếp tục chơi" },
+          { type: "new", text: "Power-up ⭐ xuất hiện sau mỗi 5 miếng ăn, nhặt để nhân đôi điểm 10 giây" },
+          { type: "new", text: "Wall Wrap mode — nút toggle: rắn xuyên tường thay vì thua khi chạm biên" },
+        ],
+        by: "Claude (claude-sonnet-4-6)",
+      },
       {
         version: "v1.2",
         date: "2026-04-21 15:00",
@@ -309,10 +368,14 @@
     const overlayTitle = document.getElementById('overlay-title');
     const overlaySub = document.getElementById('overlay-sub');
     const btn = document.getElementById('btn');
+    const multiplierBadge = document.getElementById('multiplier-badge');
+    const wrapToggleBtn = document.getElementById('wrap-toggle');
 
     const CELL = 20;
     const COLS = canvas.width / CELL;
     const ROWS = canvas.height / CELL;
+    const POWERUP_EVERY = 5;   // spawn powerup after every N foods
+    const MULTIPLIER_MS = 10000; // 2× bonus lasts 10 seconds
 
     const DIRS = {
       ArrowUp:    [0, -1], w: [0, -1],
@@ -322,30 +385,41 @@
     };
 
     let snake, dir, nextDir, food, score, best, loopId, speed, particles;
+    let paused, gameRunning;
+    let powerup, powerupDeadline, foodCount;
+    let multiplierDeadline;
+    let wrapMode = false;
 
     best = parseInt(localStorage.getItem('snake_best') || '0');
     bestEl.textContent = best;
 
-    function randFood(snake) {
+    // ── Wall Wrap toggle ────────────────────────────────────────────
+    wrapToggleBtn.addEventListener('click', () => {
+      wrapMode = !wrapMode;
+      wrapToggleBtn.textContent = wrapMode ? 'WRAP: ON' : 'WRAP: OFF';
+      wrapToggleBtn.classList.toggle('on', wrapMode);
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────────
+    function randCell(exclude) {
       let pos;
       do {
         pos = [Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS)];
-      } while (snake.some(s => s[0] === pos[0] && s[1] === pos[1]));
+      } while (exclude.some(p => p[0] === pos[0] && p[1] === pos[1]));
       return pos;
     }
 
     // ── Particle system ─────────────────────────────────────────────
-    function spawnParticles(gx, gy) {
+    function spawnParticles(gx, gy, golden = false) {
       const cx = gx * CELL + CELL / 2;
       const cy = gy * CELL + CELL / 2;
-      const count = 14;
+      const count = golden ? 20 : 14;
       for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
-        const spd = 1.8 + Math.random() * 2.8;
-        const hue = Math.random() * 60 + 10; // warm orange-yellow tones
+        const spd = (golden ? 2.5 : 1.8) + Math.random() * 2.8;
+        const hue = golden ? (45 + Math.random() * 20) : (Math.random() * 60 + 10);
         particles.push({
-          x: cx,
-          y: cy,
+          x: cx, y: cy,
           vx: Math.cos(angle) * spd,
           vy: Math.sin(angle) * spd,
           life: 1,
@@ -376,15 +450,36 @@
       ctx.globalAlpha = 1;
     }
 
+    // ── Star shape for power-up ─────────────────────────────────────
+    function drawStar(cx, cy, spikes, outerR, innerR) {
+      let rot = -Math.PI / 2;
+      const step = Math.PI / spikes;
+      ctx.beginPath();
+      for (let i = 0; i < spikes * 2; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        ctx.lineTo(cx + Math.cos(rot) * r, cy + Math.sin(rot) * r);
+        rot += step;
+      }
+      ctx.closePath();
+    }
+
+    // ── Game lifecycle ──────────────────────────────────────────────
     function startGame() {
-      snake = [[Math.floor(COLS/2), Math.floor(ROWS/2)]];
+      snake = [[Math.floor(COLS / 2), Math.floor(ROWS / 2)]];
       dir = [1, 0];
       nextDir = [1, 0];
-      food = randFood(snake);
+      food = randCell(snake);
       score = 0;
       speed = 120;
       particles = [];
+      paused = false;
+      gameRunning = true;
+      powerup = null;
+      powerupDeadline = 0;
+      foodCount = 0;
+      multiplierDeadline = 0;
       scoreEl.textContent = 0;
+      multiplierBadge.style.display = 'none';
       overlay.style.display = 'none';
       if (loopId) clearTimeout(loopId);
       loop();
@@ -397,27 +492,60 @@
     }
 
     function update() {
-      dir = nextDir;
-      const head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+      if (paused) return;
 
-      if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+      dir = nextDir;
+      let head = [snake[0][0] + dir[0], snake[0][1] + dir[1]];
+
+      // Wall collision — wrap or die
+      if (wrapMode) {
+        head = [(head[0] + COLS) % COLS, (head[1] + ROWS) % ROWS];
+      } else {
+        if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
+      }
+
       if (snake.some(s => s[0] === head[0] && s[1] === head[1])) return endGame();
 
       snake.unshift(head);
 
+      const now = Date.now();
+      const activeMultiplier = now < multiplierDeadline ? 2 : 1;
+
       if (head[0] === food[0] && head[1] === food[1]) {
-        score += 10;
+        score += 10 * activeMultiplier;
         scoreEl.textContent = score;
         if (score > best) {
           best = score;
           bestEl.textContent = best;
           localStorage.setItem('snake_best', best);
         }
-        spawnParticles(food[0], food[1]);
-        food = randFood(snake);
+        spawnParticles(food[0], food[1], false);
+        food = randCell([...snake, ...(powerup ? [powerup] : [])]);
         speed = Math.max(60, speed - 2);
+        foodCount++;
+
+        // Spawn power-up every POWERUP_EVERY foods if none active
+        if (foodCount % POWERUP_EVERY === 0 && !powerup) {
+          powerup = randCell([...snake, food]);
+          powerupDeadline = now + 7000; // disappears after 7s
+        }
+      } else if (powerup && head[0] === powerup[0] && head[1] === powerup[1]) {
+        // Collected power-up — no snake growth, just bonus
+        snake.pop();
+        spawnParticles(powerup[0], powerup[1], true);
+        multiplierDeadline = now + MULTIPLIER_MS;
+        multiplierBadge.style.display = 'inline-block';
+        powerup = null;
       } else {
         snake.pop();
+      }
+
+      // Expire power-up if not collected in time
+      if (powerup && now > powerupDeadline) powerup = null;
+
+      // Expire multiplier badge
+      if (activeMultiplier === 1 && multiplierBadge.style.display !== 'none') {
+        multiplierBadge.style.display = 'none';
       }
 
       updateParticles();
@@ -427,36 +555,87 @@
       ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Grid
       ctx.strokeStyle = '#1a1a1a';
       ctx.lineWidth = 0.5;
       for (let x = 0; x <= COLS; x++) {
-        ctx.beginPath(); ctx.moveTo(x*CELL, 0); ctx.lineTo(x*CELL, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke();
       }
       for (let y = 0; y <= ROWS; y++) {
-        ctx.beginPath(); ctx.moveTo(0, y*CELL); ctx.lineTo(canvas.width, y*CELL); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke();
       }
 
       drawParticles();
 
+      // Food
       const [fx, fy] = food;
       ctx.fillStyle = '#f87171';
       ctx.beginPath();
-      ctx.arc(fx*CELL + CELL/2, fy*CELL + CELL/2, CELL/2 - 2, 0, Math.PI*2);
+      ctx.arc(fx * CELL + CELL / 2, fy * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
 
+      // Power-up star (pulsing)
+      if (powerup) {
+        const [px, py] = powerup;
+        const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 180);
+        const glow = ctx.createRadialGradient(
+          px * CELL + CELL / 2, py * CELL + CELL / 2, 0,
+          px * CELL + CELL / 2, py * CELL + CELL / 2, CELL
+        );
+        glow.addColorStop(0, `rgba(250,204,21,${pulse * 0.4})`);
+        glow.addColorStop(1, 'rgba(250,204,21,0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(px * CELL - CELL, py * CELL - CELL, CELL * 3, CELL * 3);
+
+        ctx.fillStyle = `rgba(250, 204, 21, ${pulse})`;
+        ctx.shadowColor = '#facc15';
+        ctx.shadowBlur = 8 * pulse;
+        drawStar(px * CELL + CELL / 2, py * CELL + CELL / 2, 5, CELL / 2 - 1, CELL / 4);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Snake
       snake.forEach(([x, y], i) => {
         const ratio = i / snake.length;
         ctx.fillStyle = i === 0
           ? '#4ade80'
-          : `hsl(${140 - ratio*40}, 70%, ${50 - ratio*15}%)`;
+          : `hsl(${140 - ratio * 40}, 70%, ${50 - ratio * 15}%)`;
         ctx.beginPath();
-        ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
+        ctx.roundRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2, 4);
         ctx.fill();
       });
+
+      // Wrap mode indicator (top-left corner)
+      if (wrapMode) {
+        ctx.fillStyle = 'rgba(74,222,128,0.12)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(74,222,128,0.5)';
+        ctx.font = '10px Segoe UI';
+        ctx.fillText('WRAP', 6, 14);
+      }
+
+      // Pause overlay drawn on canvas
+      if (paused) {
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 30px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2 - 10);
+        ctx.font = '13px Segoe UI';
+        ctx.fillStyle = '#888';
+        ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 18);
+        ctx.textAlign = 'left';
+      }
     }
 
     function endGame() {
       clearTimeout(loopId);
+      gameRunning = false;
+      paused = false;
+      powerup = null;
+      multiplierBadge.style.display = 'none';
       overlayTitle.textContent = 'GAME OVER';
       overlaySub.textContent = `Score: ${score}`;
       btn.textContent = 'PLAY AGAIN';
@@ -466,6 +645,18 @@
     btn.addEventListener('click', startGame);
 
     document.addEventListener('keydown', e => {
+      // Pause toggle
+      if (e.key === 'p' || e.key === 'P') {
+        if (!gameRunning) return;
+        paused = !paused;
+        if (!paused) loop();
+        else {
+          clearTimeout(loopId);
+          draw(); // show pause frame immediately
+        }
+        return;
+      }
+
       const d = DIRS[e.key];
       if (!d) return;
       e.preventDefault();
