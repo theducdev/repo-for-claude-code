@@ -4,6 +4,8 @@ let enabled = localStorage.getItem('snake_sound') !== 'off';
 
 function getCtx() {
   if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  // Browsers suspend AudioContext until a user gesture — resume on demand.
+  if (actx.state === 'suspended') actx.resume();
   return actx;
 }
 

@@ -1,6 +1,20 @@
 // Changelog data — Claude updates this array each time a new feature is shipped.
 export const CHANGELOG = [
   {
+    version: "v1.9",
+    date: "2026-04-23 20:00",
+    items: [
+      { type: "fix", text: "index.html không load modular structure — thêm <link css/styles.css> + <script type=module src=js/main.js>, bỏ toàn bộ inline <style>/<script> cũ (v1.4) đã stale. Mọi tính năng v1.5→v1.8 (shield, poison, milestone, sound, scores, difficulty, themes) giờ mới thực sự chạy" },
+      { type: "fix", text: "Thêm các DOM elements thiếu: Scores tab + panel, .diff-btn (Easy/Normal/Hard), .theme-btn (4 màu), #warp-btn, #sound-btn" },
+      { type: "fix", text: "scores.js/changelog.js: null-safety guard khi #sc-list / #cl-list chưa mount (tránh TypeError)" },
+      { type: "fix", text: "sounds.js: gọi AudioContext.resume() trong getCtx() — browser modern treo context đến user gesture đầu tiên" },
+      { type: "new", text: "Ghost Mode: orb trắng mờ xuất hiện mỗi 11 mồi — ăn vào rắn trở nên trong suốt và xuyên thân mình 5 giây (aura dashed ring + chỉ báo GHOST Xs)" },
+      { type: "new", text: "Speed Burst: sét cam xuất hiện mỗi 9 mồi — ăn vào tốc độ gấp đôi 4 giây, +5 điểm bonus mỗi mồi (chỉ báo BOOST Xs)" },
+      { type: "new", text: "Shrink Potion: viên teal xuất hiện mỗi 13 mồi — ăn vào cắt 4 đốt đuôi và +15 điểm (chiến thuật khi rắn quá dài)" },
+    ],
+    by: "Claude (claude-opus-4-7)",
+  },
+  {
     version: "v1.8",
     date: "2026-04-21 19:30",
     items: [
@@ -93,6 +107,7 @@ export const CHANGELOG = [
 
 export function renderChangelog() {
   const clList = document.getElementById('cl-list');
+  if (!clList) return;
   CHANGELOG.forEach(entry => {
     const el = document.createElement('div');
     el.className = 'cl-entry';
