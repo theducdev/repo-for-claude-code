@@ -192,6 +192,9 @@ canvas {
 #warp-btn:hover { color: #aaa; border-color: #555; }
 #warp-btn.active { border-color: #a78bfa; color: #a78bfa; }
 
+/* ── Toggles row (warp + sound) ── */
+#toggles { display: flex; gap: 10px; align-items: center; }
+
 /* ── Controls bar ── */
 #controls { color: #555; font-size: 0.75rem; letter-spacing: 1px; }
 

@@ -3,6 +3,7 @@ let highScores = JSON.parse(localStorage.getItem('snake_hiscores') || '[]');
 
 export function renderScores() {
   const scList = document.getElementById('sc-list');
+  if (!scList) return;
   scList.innerHTML = '';
   if (highScores.length === 0) {
     scList.innerHTML = '<div class="sc-empty">No scores yet — play a game!</div>';

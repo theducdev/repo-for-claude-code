@@ -43,6 +43,17 @@ let milestonesHit = new Set();
 let milestoneFlashAt = 0, milestoneFlashScore = 0;
 const MILESTONE_DURATION = 2200;
 
+// Ghost-mode food — phantom orb, pass through self for 5s
+let ghostFood = null, ghostFoodExpiry = 0;
+let ghostActive = false, ghostExpiry = 0;
+
+// Speed-burst food — lightning bolt, 2x speed + score bonus for 4s
+let speedFood = null, speedFoodExpiry = 0;
+let speedActive = false, speedExpiry = 0;
+
+// Shrink potion — teal pill, instantly removes 4 tail segments (+15 pts)
+let shrinkFood = null, shrinkFoodExpiry = 0;
+
 function getInitialSpeed() {
   const active = document.querySelector('.diff-btn.active');
   return active ? parseInt(active.dataset.speed, 10) : 120;
@@ -104,6 +115,11 @@ function startGame() {
   poisonFood = null; poisonFoodExpiry = 0;
   milestonesHit = new Set();
   milestoneFlashAt = 0;
+  ghostFood = null; ghostFoodExpiry = 0;
+  ghostActive = false; ghostExpiry = 0;
+  speedFood = null; speedFoodExpiry = 0;
+  speedActive = false; speedExpiry = 0;
+  shrinkFood = null; shrinkFoodExpiry = 0;
   scoreEl.textContent = 0;
   overlay.style.display = 'none';
   clearTimeout(loopId);
@@ -114,7 +130,10 @@ function loop() {
   if (!running) return;
   update();
   draw();
-  loopId = setTimeout(loop, speed);
+  const delay = (speedActive && Date.now() < speedExpiry)
+    ? Math.max(30, Math.floor(speed / 2))
+    : speed;
+  loopId = setTimeout(loop, delay);
 }
 
 function update() {
@@ -127,9 +146,11 @@ function update() {
     if (head[0] < 0 || head[0] >= COLS || head[1] < 0 || head[1] >= ROWS) return endGame();
   }
 
-  // Self-collision — shield absorbs one hit
+  // Self-collision — ghost phases through, shield absorbs one hit
   if (snake.some(s => s[0] === head[0] && s[1] === head[1])) {
-    if (shieldActive) {
+    if (ghostActive && Date.now() < ghostExpiry) {
+      // phase through body — no damage
+    } else if (shieldActive) {
       shieldActive = false;
       shieldExpiry = 0;
     } else {
@@ -142,17 +163,23 @@ function update() {
 
   const now = Date.now();
 
-  // Expire power-up foods and active shield
+  // Expire power-up foods and active effects
   if (shieldFood && now >= shieldFoodExpiry) shieldFood = null;
   if (poisonFood && now >= poisonFoodExpiry) poisonFood = null;
   if (shieldActive && now >= shieldExpiry) shieldActive = false;
+  if (ghostFood && now >= ghostFoodExpiry) ghostFood = null;
+  if (ghostActive && now >= ghostExpiry) ghostActive = false;
+  if (speedFood && now >= speedFoodExpiry) speedFood = null;
+  if (speedActive && now >= speedExpiry) speedActive = false;
+  if (shrinkFood && now >= shrinkFoodExpiry) shrinkFood = null;
 
   // ── Regular food ──
   if (head[0] === food[0] && head[1] === food[1]) {
     comboCount = now < comboExpiry ? Math.min(comboCount + 1, 3) : 1;
     comboExpiry = now + 3000;
     comboFadeAt = now + 1500;
-    score += 10 * comboCount;
+    const burstBonus = speedActive && now < speedExpiry ? 5 : 0;
+    score += (10 + burstBonus) * comboCount;
     grew = true;
     spawnParticles(food[0], food[1], CELL);
     playEat();
@@ -176,6 +203,36 @@ function update() {
         ...(shieldFood ? [shieldFood] : [])];
       poisonFood = randFood(excl);
       poisonFoodExpiry = now + 5000;
+    }
+    // Ghost food every 11 regular foods, offset 4 (4, 15, 26, ...)
+    if (foodEaten % 11 === 4 && !ghostFood) {
+      const excl = [...snake, food,
+        ...(bonusFood  ? [bonusFood]  : []),
+        ...(shieldFood ? [shieldFood] : []),
+        ...(poisonFood ? [poisonFood] : [])];
+      ghostFood = randFood(excl);
+      ghostFoodExpiry = now + 6000;
+    }
+    // Speed-burst food every 9 regular foods, offset 6 (6, 15, 24, ...)
+    if (foodEaten % 9 === 6 && !speedFood) {
+      const excl = [...snake, food,
+        ...(bonusFood  ? [bonusFood]  : []),
+        ...(shieldFood ? [shieldFood] : []),
+        ...(poisonFood ? [poisonFood] : []),
+        ...(ghostFood  ? [ghostFood]  : [])];
+      speedFood = randFood(excl);
+      speedFoodExpiry = now + 5000;
+    }
+    // Shrink potion every 13 regular foods, offset 9 (9, 22, 35, ...)
+    if (foodEaten % 13 === 9 && !shrinkFood) {
+      const excl = [...snake, food,
+        ...(bonusFood  ? [bonusFood]  : []),
+        ...(shieldFood ? [shieldFood] : []),
+        ...(poisonFood ? [poisonFood] : []),
+        ...(ghostFood  ? [ghostFood]  : []),
+        ...(speedFood  ? [speedFood]  : [])];
+      shrinkFood = randFood(excl);
+      shrinkFoodExpiry = now + 6000;
     }
   }
 
@@ -213,6 +270,39 @@ function update() {
     spawnParticles(poisonFood[0], poisonFood[1], CELL, 270);
     playEat();
     poisonFood = null;
+  }
+
+  // ── Ghost food pickup — 5s phase-through-self ──
+  if (ghostFood && head[0] === ghostFood[0] && head[1] === ghostFood[1]) {
+    ghostActive = true;
+    ghostExpiry = now + 5000;
+    grew = true;
+    spawnParticles(ghostFood[0], ghostFood[1], CELL, 180);
+    playEat();
+    ghostFood = null;
+  }
+
+  // ── Speed-burst food pickup — 4s double-speed with +5 bonus per food ──
+  if (speedFood && head[0] === speedFood[0] && head[1] === speedFood[1]) {
+    speedActive = true;
+    speedExpiry = now + 4000;
+    score += 5;
+    grew = true;
+    spawnParticles(speedFood[0], speedFood[1], CELL, 30);
+    playEat();
+    speedFood = null;
+  }
+
+  // ── Shrink potion — instant: trim 4 tail segments, +15 pts, min length 3 ──
+  if (shrinkFood && head[0] === shrinkFood[0] && head[1] === shrinkFood[1]) {
+    grew = true; // block regular tail pop so shrink is deterministic
+    score += 15;
+    for (let i = 0; i < 4; i++) {
+      if (snake.length > 3) snake.pop();
+    }
+    spawnParticles(shrinkFood[0], shrinkFood[1], CELL, 160);
+    playEat();
+    shrinkFood = null;
   }
 
   if (grew) {
@@ -322,7 +412,86 @@ function draw() {
     ctx.fillRect(px*CELL + 1, py*CELL + CELL - 4, (CELL - 2) * ratio, 3);
   }
 
+  // Ghost food — translucent pale orb with dark eye-dots, countdown bar
+  if (ghostFood) {
+    const now = Date.now();
+    const pulse = 0.55 + 0.45 * Math.sin(now / 220);
+    const [gx, gy] = ghostFood;
+    const cx = gx * CELL + CELL / 2;
+    const cy = gy * CELL + CELL / 2;
+    ctx.save();
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 6 + pulse * 6;
+    ctx.globalAlpha = 0.55 + 0.35 * pulse;
+    ctx.fillStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.arc(cx - 2.5, cy - 1, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 2.5, cy - 1, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    const ratio = Math.max(0, (ghostFoodExpiry - now) / 6000);
+    ctx.fillStyle = 'rgba(226,232,240,0.8)';
+    ctx.fillRect(gx*CELL + 1, gy*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
+  // Speed-burst food — orange lightning bolt, countdown bar
+  if (speedFood) {
+    const now = Date.now();
+    const pulse = 0.6 + 0.4 * Math.sin(now / 120);
+    const [sx, sy] = speedFood;
+    const cx = sx * CELL + CELL / 2;
+    const cy = sy * CELL + CELL / 2;
+    ctx.save();
+    ctx.shadowColor = '#fb923c';
+    ctx.shadowBlur = 8 + pulse * 8;
+    ctx.fillStyle = `hsl(25, 100%, ${55 + pulse * 10}%)`;
+    ctx.beginPath();
+    ctx.moveTo(cx + 2, cy - 8);
+    ctx.lineTo(cx - 3, cy - 1);
+    ctx.lineTo(cx + 1, cy - 1);
+    ctx.lineTo(cx - 2, cy + 8);
+    ctx.lineTo(cx + 3, cy + 1);
+    ctx.lineTo(cx - 1, cy + 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    const ratio = Math.max(0, (speedFoodExpiry - now) / 5000);
+    ctx.fillStyle = 'rgba(251,146,60,0.8)';
+    ctx.fillRect(sx*CELL + 1, sy*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
+  // Shrink potion — teal circle with white minus glyph, countdown bar
+  if (shrinkFood) {
+    const now = Date.now();
+    const pulse = 0.6 + 0.4 * Math.sin(now / 300);
+    const [sx, sy] = shrinkFood;
+    const cx = sx * CELL + CELL / 2;
+    const cy = sy * CELL + CELL / 2;
+    ctx.save();
+    ctx.shadowColor = '#2dd4bf';
+    ctx.shadowBlur = 6 + pulse * 4;
+    ctx.fillStyle = `hsl(175, 70%, ${38 + 10 * pulse}%)`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy);
+    ctx.lineTo(cx + 4, cy);
+    ctx.stroke();
+    ctx.restore();
+    const ratio = Math.max(0, (shrinkFoodExpiry - now) / 6000);
+    ctx.fillStyle = 'rgba(45,212,191,0.8)';
+    ctx.fillRect(sx*CELL + 1, sy*CELL + CELL - 4, (CELL - 2) * ratio, 3);
+  }
+
   // Snake
+  const isGhost = ghostActive && Date.now() < ghostExpiry;
+  if (isGhost) ctx.globalAlpha = 0.5;
   snake.forEach(([x, y], i) => {
     const ratio = i / snake.length;
     ctx.fillStyle = i === 0
@@ -332,6 +501,21 @@ function draw() {
     ctx.roundRect(x*CELL + 1, y*CELL + 1, CELL - 2, CELL - 2, 4);
     ctx.fill();
   });
+  ctx.globalAlpha = 1;
+
+  // Ghost aura — dashed ring around snake head
+  if (isGhost) {
+    const [hx, hy] = snake[0];
+    const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 140);
+    ctx.save();
+    ctx.strokeStyle = `rgba(226, 232, 240, ${0.5 + 0.3 * pulse})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.arc(hx * CELL + CELL / 2, hy * CELL + CELL / 2, CELL / 2 + 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // Shield glow ring around snake head
   if (shieldActive && Date.now() < shieldExpiry) {
@@ -390,6 +574,34 @@ function draw() {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
     ctx.fillText(`SHIELD ${remaining}s`, 5, canvas.height - 5);
+    ctx.restore();
+  }
+
+  // Ghost indicator — bottom-center
+  if (ghostActive && now < ghostExpiry) {
+    const remaining = Math.ceil((ghostExpiry - now) / 1000);
+    ctx.save();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 6;
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`GHOST ${remaining}s`, canvas.width / 2, canvas.height - 5);
+    ctx.restore();
+  }
+
+  // Speed-burst indicator — bottom-right
+  if (speedActive && now < speedExpiry) {
+    const remaining = Math.ceil((speedExpiry - now) / 1000);
+    ctx.save();
+    ctx.fillStyle = '#fb923c';
+    ctx.shadowColor = '#fb923c';
+    ctx.shadowBlur = 6;
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`BOOST ${remaining}s`, canvas.width - 5, canvas.height - 5);
     ctx.restore();
   }
 
